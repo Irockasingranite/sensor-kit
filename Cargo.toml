@@ -35,6 +35,8 @@ embedded-graphics = "0.8.1"
 display-interface-i2c = "0.5.0"
 u8g2-fonts = { version = "0.6.0", features = ["embedded_graphics_textstyle"] }
 heapless = "0.8.0"
+embedded-canvas = { version = "0.3.1", default-features = false, features = ["embedded-graphics"] }
+embedded-layout = "0.4.1"
 [profile.release]
 debug = 2
 lto = true
