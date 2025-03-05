@@ -8,44 +8,30 @@ use embedded_graphics::{
 };
 use embedded_layout::prelude::*;
 
-pub struct TitleFrame<'a, V, S, C> {
-    inner: V,
+pub struct TitleFrame<'a, S, C> {
     title: &'a str,
     title_style: S,
     frame_color: C,
     area: Rectangle,
 }
 
-impl<'a, V, S, C> TitleFrame<'a, V, S, C>
+impl<'a, S, C> TitleFrame<'a, S, C>
 where
-    V: View,
-    S: TextRenderer + Clone,
+    S: TextRenderer,
 {
-    pub fn new_with_area(
-        inner: V,
-        title: &'a str,
-        title_style: S,
-        frame_color: C,
-        area: Rectangle,
-    ) -> Self {
-        let mut title_frame = Self {
-            inner,
+    pub fn new(title: &'a str, title_style: S, frame_color: C, area: Rectangle) -> Self {
+        Self {
             title,
             title_style,
             frame_color,
             area,
-        };
-
-        title_frame.align_inner();
-        title_frame
+        }
     }
-}
 
-impl<V, S, C> TitleFrame<'_, V, S, C>
-where
-    V: View,
-    S: TextRenderer,
-{
+    pub fn inner_area(&self) -> Rectangle {
+        self.area_below_title().offset(-5)
+    }
+
     fn area_below_title(&self) -> Rectangle {
         let title_height = self
             .title_style
@@ -57,26 +43,14 @@ where
         self.area
             .resized_height(self.area.size.height - title_height, AnchorY::Bottom)
     }
-
-    fn inner_area(&self) -> Rectangle {
-        self.area_below_title().offset(-5)
-    }
-
-    fn align_inner(&mut self) {
-        let inner_area = self.inner_area();
-        self.inner
-            .align_to_mut(&inner_area, horizontal::Center, vertical::Center);
-    }
 }
 
-impl<V, S, C> View for TitleFrame<'_, V, S, C>
+impl<S, C> View for TitleFrame<'_, S, C>
 where
-    V: View,
     S: TextRenderer,
 {
     fn translate_impl(&mut self, by: Point) {
         self.area.translate_impl(by);
-        self.align_inner();
     }
 
     fn bounds(&self) -> Rectangle {
@@ -84,9 +58,8 @@ where
     }
 }
 
-impl<V, S, C> Drawable for TitleFrame<'_, V, S, C>
+impl<S, C> Drawable for TitleFrame<'_, S, C>
 where
-    V: View + Drawable<Color = C>,
     C: PixelColor,
     S: CharacterStyle<Color = C> + TextRenderer<Color = C>,
 {
@@ -113,7 +86,6 @@ where
 
         title.draw(target)?;
         frame.draw(target)?;
-        self.inner.draw(target)?;
 
         Ok(())
     }
