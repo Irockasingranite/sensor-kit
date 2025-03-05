@@ -77,8 +77,8 @@ async fn main(_spawner: Spawner) {
                 temp_hum_display,
                 "Environment",
                 title_style,
-                display.bounding_box(),
                 BinaryColor::On,
+                display.bounding_box(),
             );
 
             framed_display.draw(&mut display).unwrap();
