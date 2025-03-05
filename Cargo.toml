@@ -37,6 +37,7 @@ u8g2-fonts = { version = "0.6.0", features = ["embedded_graphics_textstyle"] }
 heapless = "0.8.0"
 embedded-canvas = { version = "0.3.1", default-features = false, features = ["embedded-graphics"] }
 embedded-layout = "0.4.1"
+bme280 = { version = "0.5.1", features = ["async"] }
 [profile.release]
 debug = 2
 lto = true

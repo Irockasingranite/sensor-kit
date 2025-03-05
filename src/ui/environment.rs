@@ -13,15 +13,23 @@ use heapless::String;
 pub struct TemperatureHumidityDisplay<S> {
     temperature_c: f32,
     humidity_pct: f32,
+    pressure_kpa: f32,
     text_style: S,
     area: Rectangle,
 }
 
 impl<S> TemperatureHumidityDisplay<S> {
-    pub fn new(temperature_c: f32, humidity_pct: f32, text_style: S, area: Rectangle) -> Self {
+    pub fn new(
+        temperature_c: f32,
+        humidity_pct: f32,
+        pressure_kpa: f32,
+        text_style: S,
+        area: Rectangle,
+    ) -> Self {
         Self {
             temperature_c,
             humidity_pct,
+            pressure_kpa,
             text_style,
             area,
         }
@@ -56,8 +64,8 @@ where
         let mut hum_str = String::<8>::new();
         _ = write!(&mut hum_str, "{:.2}%", self.humidity_pct);
 
-        let mut pres_str = String::<8>::new();
-        _ = write!(&mut pres_str, "??? kPa");
+        let mut pres_str = String::<16>::new();
+        _ = write!(&mut pres_str, "{:.1}kPa", self.pressure_kpa);
 
         let temp_label = Text::new("Temp.:", Point::zero(), self.text_style.clone());
         let temp_value = Text::new(&temp_str, Point::zero(), self.text_style.clone());
