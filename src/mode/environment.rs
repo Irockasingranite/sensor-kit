@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use alloc::string::String;
 use core::fmt::Write;
 use embedded_graphics::prelude::*;
@@ -7,18 +8,21 @@ use embedded_layout::layout::linear::spacing::DistributeFill;
 use embedded_layout::layout::linear::{FixedMargin, LinearLayout};
 use embedded_layout::prelude::*;
 
-use crate::app::AppStyle;
+use crate::app::{AppMode, AppStyle};
 use crate::app::{Draw, Update};
+use crate::peripherals::PeripheralError;
 
-pub struct EnvironmentMode<ES> {
-    sensors: ES,
+pub struct EnvironmentMode<'a> {
+    sensors: Box<dyn EnvironmentSensors + 'a>,
     temperature_c: Option<f32>,
     humidity_pct: Option<f32>,
     pressure_kpa: Option<f32>,
 }
 
-impl<ES> EnvironmentMode<ES> {
-    pub fn new(sensors: ES) -> Self {
+impl<'a> EnvironmentMode<'a> {
+    pub fn new(sensors: impl EnvironmentSensors + 'a) -> Self {
+        let sensors = Box::new(sensors);
+
         Self {
             sensors,
             temperature_c: None,
@@ -28,10 +32,7 @@ impl<ES> EnvironmentMode<ES> {
     }
 }
 
-impl<ES> Update for EnvironmentMode<ES>
-where
-    ES: EnvironmentSensors,
-{
+impl Update for EnvironmentMode<'_> {
     fn update(&mut self) {
         self.temperature_c = self.sensors.get_temperature().ok();
         self.humidity_pct = self.sensors.get_humidity().ok();
@@ -39,17 +40,16 @@ where
     }
 }
 
-impl<ES, D, C, E> Draw<D, C, E> for EnvironmentMode<ES>
+impl<D> Draw<D> for EnvironmentMode<'_>
 where
-    C: PixelColor,
-    D: DrawTarget<Color = C, Error = E>,
+    D: DrawTarget,
 {
     fn draw_with_style(
         &self,
-        style: &AppStyle<C>,
+        style: &AppStyle<D::Color>,
         draw_area: Rectangle,
         target: &mut D,
-    ) -> Result<(), E> {
+    ) -> Result<(), D::Error> {
         let mut temp_str = String::new();
         if let Some(temperature) = self.temperature_c {
             _ = write!(&mut temp_str, "{:.2}°C", temperature);
@@ -100,10 +100,17 @@ where
     }
 }
 
-pub trait EnvironmentSensors {
-    type Error;
+impl<D> AppMode<D> for EnvironmentMode<'_>
+where
+    D: DrawTarget,
+{
+    fn title(&self) -> String {
+        String::from("Environment")
+    }
+}
 
-    fn get_temperature(&mut self) -> Result<f32, Self::Error>;
-    fn get_humidity(&mut self) -> Result<f32, Self::Error>;
-    fn get_pressure(&mut self) -> Result<f32, Self::Error>;
+pub trait EnvironmentSensors {
+    fn get_temperature(&mut self) -> Result<f32, PeripheralError>;
+    fn get_humidity(&mut self) -> Result<f32, PeripheralError>;
+    fn get_pressure(&mut self) -> Result<f32, PeripheralError>;
 }

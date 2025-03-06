@@ -1,51 +1,49 @@
+use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::String;
-use core::error::Error;
 use embedded_graphics::text::Text;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use embedded_layout::align::Align;
 use embedded_layout::layout::linear::{FixedMargin, LinearLayout};
 use embedded_layout::prelude::*;
 
+use crate::app::{AppMode, AppStyle};
+use crate::peripherals::PeripheralError;
 use crate::{
     app::{Draw, Update},
     ui::HorizontalBar,
 };
 
-pub struct PotentiometerMode<P> {
-    input: P,
+pub struct PotentiometerMode<'a> {
+    input: Box<dyn PotentiometerInput + 'a>,
     value_pct: Option<f32>,
 }
 
-impl<P> PotentiometerMode<P> {
-    pub fn new(input: P) -> Self {
+impl<'a> PotentiometerMode<'a> {
+    pub fn new(input: impl PotentiometerInput + 'a) -> Self {
         Self {
-            input,
+            input: Box::new(input),
             value_pct: None,
         }
     }
 }
 
-impl<P> Update for PotentiometerMode<P>
-where
-    P: PotentiometerInput,
-{
+impl Update for PotentiometerMode<'_> {
     fn update(&mut self) {
         self.value_pct = self.input.value_pct().ok();
     }
 }
 
-impl<P, D, C, E> Draw<D, C, E> for PotentiometerMode<P>
+impl<D> Draw<D> for PotentiometerMode<'_>
 where
-    C: PixelColor,
-    D: DrawTarget<Color = C, Error = E>,
+    D: DrawTarget,
 {
     fn draw_with_style(
         &self,
-        style: &crate::app::AppStyle<C>,
-        draw_area: embedded_graphics::primitives::Rectangle,
+        style: &AppStyle<D::Color>,
+        draw_area: Rectangle,
         target: &mut D,
-    ) -> Result<(), E> {
+    ) -> Result<(), D::Error> {
         let string = match self.value_pct {
             Some(value) => format!("{:.1}%", value),
             None => String::from("???"),
@@ -75,8 +73,15 @@ where
     }
 }
 
-pub trait PotentiometerInput {
-    type Error: Error;
+impl<D> AppMode<D> for PotentiometerMode<'_>
+where
+    D: DrawTarget,
+{
+    fn title(&self) -> String {
+        String::from("Potentiometer")
+    }
+}
 
-    fn value_pct(&mut self) -> Result<f32, Self::Error>;
+pub trait PotentiometerInput {
+    fn value_pct(&mut self) -> Result<f32, PeripheralError>;
 }

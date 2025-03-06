@@ -2,13 +2,8 @@ use crate::mode::environment::EnvironmentSensors;
 use bme280::i2c::BME280;
 use embassy_time::Delay;
 use embedded_dht_rs::dht20::Dht20;
-use thiserror::Error;
 
-#[derive(Debug, Error)]
-pub enum SensorKitError {
-    #[error("Error during I2C transfer")]
-    I2cError,
-}
+use super::PeripheralError;
 
 pub struct SensorKitEnvSensors<I, D>
 where
@@ -34,26 +29,24 @@ where
     I: embedded_hal::i2c::I2c,
     D: embedded_hal::delay::DelayNs,
 {
-    type Error = SensorKitError;
-
-    fn get_temperature(&mut self) -> Result<f32, Self::Error> {
+    fn get_temperature(&mut self) -> Result<f32, PeripheralError> {
         self.dht20
             .read()
             .map(|r| r.temperature)
-            .map_err(|_| SensorKitError::I2cError)
+            .map_err(|_| PeripheralError::I2cError)
     }
 
-    fn get_humidity(&mut self) -> Result<f32, Self::Error> {
+    fn get_humidity(&mut self) -> Result<f32, PeripheralError> {
         self.dht20
             .read()
             .map(|r| r.humidity)
-            .map_err(|_| SensorKitError::I2cError)
+            .map_err(|_| PeripheralError::I2cError)
     }
 
-    fn get_pressure(&mut self) -> Result<f32, Self::Error> {
+    fn get_pressure(&mut self) -> Result<f32, PeripheralError> {
         self.bmp280
             .measure(&mut Delay)
             .map(|r| r.pressure / 1000.0)
-            .map_err(|_| SensorKitError::I2cError)
+            .map_err(|_| PeripheralError::I2cError)
     }
 }

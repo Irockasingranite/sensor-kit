@@ -2,6 +2,8 @@ use embassy_stm32::adc::{self, Adc, AdcChannel};
 
 use crate::mode::potentiometer::PotentiometerInput;
 
+use super::PeripheralError;
+
 pub struct SensorKitPotentiometer<'a, ADC, CH>
 where
     ADC: adc::Instance,
@@ -28,9 +30,7 @@ where
     ADC: adc::Instance,
     CH: adc::AdcChannel<ADC>,
 {
-    type Error = core::convert::Infallible;
-
-    fn value_pct(&mut self) -> Result<f32, Self::Error> {
+    fn value_pct(&mut self) -> Result<f32, PeripheralError> {
         let value = self.adc.blocking_read(&mut self.channel);
         let inverted = Self::MAX_VALUE - value;
         let value_pct = 100.0 * (inverted as f32 / Self::MAX_VALUE as f32);

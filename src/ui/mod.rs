@@ -1,5 +1,5 @@
-mod title_frame;
 mod horizontal_bar;
+mod title_frame;
 
-pub use title_frame::TitleFrame;
 pub use horizontal_bar::HorizontalBar;
+pub use title_frame::TitleFrame;

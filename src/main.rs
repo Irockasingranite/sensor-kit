@@ -8,31 +8,33 @@ mod mode;
 mod peripherals;
 mod ui;
 
-use alloc::format;
-use app::{AppStyle, Draw, Update};
-use embedded_layout::align::{horizontal, vertical, Align};
+use app::{AppMode, AppStyle};
 use mode::{
-    environment::{EnvironmentMode, EnvironmentSensors},
+    environment::EnvironmentMode,
     potentiometer::PotentiometerMode,
 };
 use peripherals::{SensorKitEnvSensors, SensorKitPotentiometer};
 use ui::TitleFrame;
 
+use alloc::{boxed::Box, vec, vec::Vec};
 use bme280::i2c::BME280;
 use core::mem::MaybeUninit;
 use display_interface_i2c::I2CInterface;
 use embassy_executor::Spawner;
 use embassy_stm32::{
-    adc::{Adc, AdcChannel},
+    adc::Adc,
     bind_interrupts,
     i2c::{self, I2c},
     time::Hertz,
 };
-use embassy_time::{Delay, Timer};
+use embassy_time::{Delay, Duration, Instant, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
-use embedded_graphics::{pixelcolor::BinaryColor, prelude::*, text::Text};
-use embedded_hal_bus::{i2c as i2c_bus, util::AtomicCell};
+use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
+use embedded_hal_bus::{
+    i2c::self as i2c_bus,
+    util::AtomicCell,
+};
 use ssd1315::Ssd1315;
 use u8g2_fonts::{fonts, U8g2TextStyle};
 use {defmt_rtt as _, panic_probe as _};
@@ -91,26 +93,39 @@ async fn main(_spawner: Spawner) {
     let adc_channel = p.PA3;
     let potentiometer = SensorKitPotentiometer::new(adc, adc_channel);
 
-    let mut _environment_mode = EnvironmentMode::new(sensors);
-    let mut potentiometer_mode = PotentiometerMode::new(potentiometer);
+    let environment_mode = EnvironmentMode::new(sensors);
+    let potentiometer_mode = PotentiometerMode::new(potentiometer);
+
+    let mut modes: Vec<Box<dyn AppMode<_>>> =
+        vec![Box::new(environment_mode), Box::new(potentiometer_mode)];
 
     loop {
-        potentiometer_mode.update();
+        for mode in modes.iter_mut() {
+            let mode_start = Instant::now();
+            loop {
+                if Instant::now() - mode_start > Duration::from_secs(5) {
+                    break;
+                }
 
-        let frame = TitleFrame::new(
-            "Potentiometer",
-            app_style.title_style.clone(),
-            BinaryColor::On,
-            display.bounding_box(),
-        );
+                mode.update();
+                let title = mode.title();
 
-        let inner_area = frame.inner_area();
+                let frame = TitleFrame::new(
+                    &title,
+                    app_style.title_style.clone(),
+                    BinaryColor::On,
+                    display.bounding_box(),
+                );
 
-        _ = frame.draw(&mut display);
-        _ = potentiometer_mode.draw_with_style(&app_style, inner_area, &mut display);
+                let inner_area = frame.inner_area();
 
-        display.flush_screen();
+                _ = frame.draw(&mut display);
+                _ = mode.draw_with_style(&app_style, inner_area, &mut display);
 
-        Timer::after_millis(100).await;
+                display.flush_screen();
+
+                Timer::after_millis(100).await;
+            }
+        }
     }
 }
