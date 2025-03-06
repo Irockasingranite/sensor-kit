@@ -8,9 +8,14 @@ mod mode;
 mod peripherals;
 mod ui;
 
+use alloc::format;
 use app::{AppStyle, Draw, Update};
-use mode::environment::EnvironmentMode;
-use peripherals::SensorKitEnvSensors;
+use embedded_layout::align::{horizontal, vertical, Align};
+use mode::{
+    environment::{EnvironmentMode, EnvironmentSensors},
+    potentiometer::PotentiometerMode,
+};
+use peripherals::{SensorKitEnvSensors, SensorKitPotentiometer};
 use ui::TitleFrame;
 
 use bme280::i2c::BME280;
@@ -18,6 +23,7 @@ use core::mem::MaybeUninit;
 use display_interface_i2c::I2CInterface;
 use embassy_executor::Spawner;
 use embassy_stm32::{
+    adc::{Adc, AdcChannel},
     bind_interrupts,
     i2c::{self, I2c},
     time::Hertz,
@@ -25,7 +31,7 @@ use embassy_stm32::{
 use embassy_time::{Delay, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
-use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
+use embedded_graphics::{pixelcolor::BinaryColor, prelude::*, text::Text};
 use embedded_hal_bus::{i2c as i2c_bus, util::AtomicCell};
 use ssd1315::Ssd1315;
 use u8g2_fonts::{fonts, U8g2TextStyle};
@@ -79,27 +85,32 @@ async fn main(_spawner: Spawner) {
 
     let text_style = U8g2TextStyle::new(fonts::u8g2_font_mercutio_basic_nbp_tf, BinaryColor::On);
     let title_style = U8g2TextStyle::new(fonts::u8g2_font_mercutio_sc_nbp_tf, BinaryColor::On);
-    let app_style = AppStyle::new(title_style, text_style);
+    let app_style = AppStyle::new(title_style, text_style, BinaryColor::On);
 
-    let mut mode = EnvironmentMode::new(sensors);
+    let adc = Adc::new(p.ADC1);
+    let adc_channel = p.PA3;
+    let potentiometer = SensorKitPotentiometer::new(adc, adc_channel);
+
+    let mut _environment_mode = EnvironmentMode::new(sensors);
+    let mut potentiometer_mode = PotentiometerMode::new(potentiometer);
 
     loop {
-        mode.update();
+        potentiometer_mode.update();
 
         let frame = TitleFrame::new(
-            "Environment",
+            "Potentiometer",
             app_style.title_style.clone(),
             BinaryColor::On,
             display.bounding_box(),
         );
 
-        let framed_area = frame.inner_area();
+        let inner_area = frame.inner_area();
 
-        _ = mode.draw_with_style(&app_style, framed_area, &mut display);
         _ = frame.draw(&mut display);
+        _ = potentiometer_mode.draw_with_style(&app_style, inner_area, &mut display);
 
         display.flush_screen();
 
-        Timer::after_millis(500).await;
+        Timer::after_millis(100).await;
     }
 }

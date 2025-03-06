@@ -20,13 +20,15 @@ where
 pub struct AppStyle<C> {
     pub title_style: U8g2TextStyle<C>,
     pub text_style: U8g2TextStyle<C>,
+    pub default_color: C
 }
 
 impl<C> AppStyle<C> {
-    pub fn new(title_style: U8g2TextStyle<C>, text_style: U8g2TextStyle<C>) -> Self {
+    pub fn new(title_style: U8g2TextStyle<C>, text_style: U8g2TextStyle<C>, default_color: C) -> Self {
         Self {
             title_style,
             text_style,
+            default_color,
         }
     }
 }
