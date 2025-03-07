@@ -36,7 +36,7 @@ impl<'a> PotentiometerMode<'a> {
 #[async_trait]
 impl Update for PotentiometerMode<'_> {
     async fn update(&mut self) {
-        self.value_pct = self.input.value_pct().await.ok();
+        self.value_pct = self.input.get_value().await.ok();
     }
 }
 
@@ -92,5 +92,5 @@ where
 /// Defined the interface for a peripheral to be used as input for the [`PotentiometerMode`].
 pub trait PotentiometerInput: Send {
     /// Returns the current signal value in %.
-    async fn value_pct(&mut self) -> Result<f32, PeripheralError>;
+    async fn get_value(&mut self) -> Result<f32, PeripheralError>;
 }

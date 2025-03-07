@@ -11,7 +11,7 @@ mod ui;
 use app::{AppMode, AppStyle};
 use mode::potentiometer::PotentiometerMode;
 use mode::{environment::EnvironmentMode, light::LightSensorMode};
-use peripherals::{SensorKitEnvSensors, SensorKitLightSensor, SensorKitPotentiometer};
+use peripherals::{AnalogInput, SensorKitEnvSensors};
 use ui::TitleFrame;
 
 use alloc::vec;
@@ -110,17 +110,17 @@ async fn main(spawner: Spawner) {
     let environment_mode = EnvironmentMode::new(sensors);
 
     // Potentiometer mode
-    let potentiometer = SensorKitPotentiometer::new(adc.clone(), potentiometer_adc_channel);
+    let potentiometer = AnalogInput::new(adc.clone(), potentiometer_adc_channel, 4096);
     let potentiometer_mode = PotentiometerMode::new(potentiometer);
 
     // Light sensor mode.
-    let light_sensor = SensorKitLightSensor::new(adc.clone(), light_sensor_adc_channel);
+    let light_sensor = AnalogInput::new(adc.clone(), light_sensor_adc_channel, 2800);
     let light_mode = LightSensorMode::new(light_sensor);
 
     let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
-        Box::new(light_mode),
         Box::new(environment_mode),
         Box::new(potentiometer_mode),
+        Box::new(light_mode),
     ];
 
     // Spawn ancillary tasks

@@ -1,13 +1,10 @@
+/// Analog Input.
+mod analog_input;
 /// Environment sensors.
 mod environment;
-/// Light Sensor.
-mod light;
-/// Potentiometer.
-mod potentiometer;
 
+pub use analog_input::AnalogInput;
 pub use environment::SensorKitEnvSensors;
-pub use light::SensorKitLightSensor;
-pub use potentiometer::SensorKitPotentiometer;
 
 use thiserror::Error;
 
