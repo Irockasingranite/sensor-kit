@@ -5,12 +5,15 @@ use embedded_dht_rs::dht20::Dht20;
 
 use super::PeripheralError;
 
+/// Struct containing environment sensors, i.e. the DHT20 and BMP280.
 pub struct SensorKitEnvSensors<I, D>
 where
     I: embedded_hal::i2c::I2c,
     D: embedded_hal::delay::DelayNs,
 {
+    /// DHT20 Temperature and humidity sensor.
     dht20: Dht20<I, D>,
+    /// BMP280 Temperature and pressure sensor.
     bmp280: BME280<I>,
 }
 

@@ -12,10 +12,16 @@ use crate::app::{AppMode, AppStyle};
 use crate::app::{Draw, Update};
 use crate::peripherals::PeripheralError;
 
+/// Struct defining the 'Environment' mode. Samples data from a set of sensors and displays it in a
+/// table.
 pub struct EnvironmentMode<'a> {
+    /// Sensors used as data source.
     sensors: Box<dyn EnvironmentSensors + 'a>,
+    /// Temperature in °C.
     temperature_c: Option<f32>,
+    /// Humidity in %.
     humidity_pct: Option<f32>,
+    /// Pressure in kPa.
     pressure_kpa: Option<f32>,
 }
 
@@ -109,8 +115,12 @@ where
     }
 }
 
+/// Defines interface for environment sensors that can be used by the [`EnvironmentMode`].
 pub trait EnvironmentSensors {
+    /// Return the current temperature in °C.
     fn get_temperature(&mut self) -> Result<f32, PeripheralError>;
+    /// Return the current humidity in %.
     fn get_humidity(&mut self) -> Result<f32, PeripheralError>;
+    /// Return the current air pressure in kPa.
     fn get_pressure(&mut self) -> Result<f32, PeripheralError>;
 }

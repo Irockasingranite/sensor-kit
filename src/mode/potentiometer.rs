@@ -14,8 +14,12 @@ use crate::{
     ui::HorizontalBar,
 };
 
+/// Struct defining the `Potentiometer` mode. Samples value from a potentiometer and displays it as
+/// both a percentage and a bar.
 pub struct PotentiometerMode<'a> {
+    /// The potentiometer used as input.
     input: Box<dyn PotentiometerInput + 'a>,
+    /// Signal value in %.
     value_pct: Option<f32>,
 }
 
@@ -82,6 +86,8 @@ where
     }
 }
 
+/// Defined the interface for a peripheral to be used as input for the [`PotentiometerMode`].
 pub trait PotentiometerInput {
+    /// Returns the current signal value in %.
     fn value_pct(&mut self) -> Result<f32, PeripheralError>;
 }

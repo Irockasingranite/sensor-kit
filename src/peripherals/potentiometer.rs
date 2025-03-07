@@ -4,12 +4,15 @@ use crate::mode::potentiometer::PotentiometerInput;
 
 use super::PeripheralError;
 
+/// Struct containing peripherals used for sampling potentiometer setting.
 pub struct SensorKitPotentiometer<'a, ADC, CH>
 where
     ADC: adc::Instance,
     CH: AdcChannel<ADC>,
 {
+    /// ADC measuring the signal.
     adc: Adc<'a, ADC>,
+    /// Specific ADC channel used.
     channel: CH,
 }
 

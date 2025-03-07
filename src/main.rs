@@ -68,51 +68,68 @@ async fn main(spawner: Spawner) {
         Default::default(),
     );
 
+    // Set up peripherals
+
+    // Button used for mode switching
     let button = exti::ExtiInput::new(p.PF14, p.EXTI14, gpio::Pull::Down);
 
+    // I2C bus
     let i2c1 = AtomicCell::new(i2c1);
 
+    // Environment sensors
     let dht20 = Dht20::new(i2c_bus::AtomicDevice::new(&i2c1), Delay);
     let mut bmp280 = BME280::new_secondary(i2c_bus::AtomicDevice::new(&i2c1));
-
-    let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
-    let mut display = Ssd1315::new(display_interface);
-
     bmp280
         .init(&mut Delay)
         .expect("Failed to initialize BMP280)");
 
+    // Potentiometer ADC
+    let adc = Adc::new(p.ADC1);
+    let adc_channel = p.PA3;
+
+    // Display
+    let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
+    let mut display = Ssd1315::new(display_interface);
     display.init_screen();
     display.flush_screen();
 
-    let sensors = SensorKitEnvSensors::new(dht20, bmp280);
-
+    // Define App style
     let text_style = U8g2TextStyle::new(fonts::u8g2_font_mercutio_basic_nbp_tf, BinaryColor::On);
     let title_style = U8g2TextStyle::new(fonts::u8g2_font_mercutio_sc_nbp_tf, BinaryColor::On);
     let app_style = AppStyle::new(title_style, text_style, BinaryColor::On);
 
-    let adc = Adc::new(p.ADC1);
-    let adc_channel = p.PA3;
-    let potentiometer = SensorKitPotentiometer::new(adc, adc_channel);
+    // Set up modes
 
+    // Environment mode
+    let sensors = SensorKitEnvSensors::new(dht20, bmp280);
     let environment_mode = EnvironmentMode::new(sensors);
+
+    // Potentiometer mode
+    let potentiometer = SensorKitPotentiometer::new(adc, adc_channel);
     let potentiometer_mode = PotentiometerMode::new(potentiometer);
 
     let mut modes: Vec<Box<dyn AppMode<_>>> =
         vec![Box::new(environment_mode), Box::new(potentiometer_mode)];
 
+    // Spawn ancillary tasks
     _ = spawner.spawn(button_handler(button, &BUTTON_SIGNAL));
 
+    // Loop over all modes (.cycle() requires Clone, which dyn AppMode isn't)
     loop {
         for mode in modes.iter_mut() {
+            let title = mode.title();
+
+            // Continuously run the active mode
             loop {
+                // If the button handler signals us, switch to the next mode
                 if let Some(true) = &BUTTON_SIGNAL.try_take() {
                     break;
                 }
 
+                // Update state
                 mode.update();
-                let title = mode.title();
 
+                // Set up frame with mode title
                 let frame = TitleFrame::new(
                     &title,
                     app_style.title_style.clone(),
@@ -122,9 +139,9 @@ async fn main(spawner: Spawner) {
 
                 let inner_area = frame.inner_area();
 
+                // Draw both frame and content
                 _ = frame.draw(&mut display);
                 _ = mode.draw_with_style(&app_style, inner_area, &mut display);
-
                 display.flush_screen();
 
                 Timer::after_millis(100).await;
@@ -134,14 +151,14 @@ async fn main(spawner: Spawner) {
 }
 
 #[task]
+/// Task that signals button presses.
 async fn button_handler(
     mut button: ExtiInput<'static>,
     signal: &'static Signal<CriticalSectionRawMutex, bool>,
 ) {
     loop {
         button.wait_for_high().await;
-        defmt::info!("signal");
         signal.signal(true);
-        Timer::after_millis(200).await;
+        Timer::after_millis(200).await; // Interval before a new event is signaled
     }
 }
