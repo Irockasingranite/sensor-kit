@@ -4,3 +4,5 @@ pub mod environment;
 pub mod light;
 /// Potentiometer mode.
 pub mod potentiometer;
+/// Sound mode.
+pub mod sound;

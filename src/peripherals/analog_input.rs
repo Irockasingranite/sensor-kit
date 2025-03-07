@@ -6,6 +6,7 @@ use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 
 use crate::mode::light::LightSensor;
 use crate::mode::potentiometer::PotentiometerInput;
+use crate::mode::sound::SoundInput;
 
 use super::PeripheralError;
 
@@ -72,6 +73,17 @@ where
 
 #[async_trait]
 impl<ADC, CH> LightSensor for AnalogInput<'_, ADC, CH>
+where
+    ADC: adc::Instance + Send,
+    CH: AdcChannel<ADC> + Send,
+{
+    async fn get_value(&mut self) -> Result<f32, super::PeripheralError> {
+        self.get_value_pct().await
+    }
+}
+
+#[async_trait]
+impl<ADC, CH> SoundInput for AnalogInput<'_, ADC, CH>
 where
     ADC: adc::Instance + Send,
     CH: AdcChannel<ADC> + Send,

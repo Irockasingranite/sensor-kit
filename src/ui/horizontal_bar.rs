@@ -58,7 +58,7 @@ where
 
         let inner_area = self.area.offset(-2);
         let full_width = inner_area.size.width;
-        let fill_width = (full_width as f32 * self.fill_pct / 100.0) as u32;
+        let fill_width = (full_width as f32 * self.fill_pct.clamp(0.0, 100.0) / 100.0) as u32;
 
         let fill = inner_area
             .resized_width(fill_width, AnchorX::Left)

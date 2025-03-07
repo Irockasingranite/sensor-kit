@@ -10,6 +10,7 @@ mod ui;
 
 use app::{AppMode, AppStyle};
 use mode::potentiometer::PotentiometerMode;
+use mode::sound::SoundMode;
 use mode::{environment::EnvironmentMode, light::LightSensorMode};
 use peripherals::{AnalogInput, SensorKitEnvSensors};
 use ui::TitleFrame;
@@ -91,6 +92,7 @@ async fn main(spawner: Spawner) {
 
     let potentiometer_adc_channel = p.PA3;
     let light_sensor_adc_channel = p.PC1;
+    let sound_sensor_adc_channel = p.PC3;
 
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
@@ -117,7 +119,12 @@ async fn main(spawner: Spawner) {
     let light_sensor = AnalogInput::new(adc.clone(), light_sensor_adc_channel, 2800);
     let light_mode = LightSensorMode::new(light_sensor);
 
+    // Sound sensor mode.
+    let sound_sensor = AnalogInput::new(adc.clone(), sound_sensor_adc_channel, 1500);
+    let sound_mode = SoundMode::new(sound_sensor);
+
     let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
+        Box::new(sound_mode),
         Box::new(environment_mode),
         Box::new(potentiometer_mode),
         Box::new(light_mode),
