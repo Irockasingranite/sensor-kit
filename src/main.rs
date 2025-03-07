@@ -9,10 +9,8 @@ mod peripherals;
 mod ui;
 
 use app::{AppMode, AppStyle};
-use mode::{
-    environment::EnvironmentMode,
-    potentiometer::PotentiometerMode,
-};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
+use mode::{environment::EnvironmentMode, potentiometer::PotentiometerMode};
 use peripherals::{SensorKitEnvSensors, SensorKitPotentiometer};
 use ui::TitleFrame;
 
@@ -20,21 +18,20 @@ use alloc::{boxed::Box, vec, vec::Vec};
 use bme280::i2c::BME280;
 use core::mem::MaybeUninit;
 use display_interface_i2c::I2CInterface;
-use embassy_executor::Spawner;
+use embassy_executor::{task, Spawner};
 use embassy_stm32::{
     adc::Adc,
     bind_interrupts,
+    exti::{self, ExtiInput},
+    gpio,
     i2c::{self, I2c},
     time::Hertz,
 };
-use embassy_time::{Delay, Duration, Instant, Timer};
+use embassy_time::{Delay, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
-use embedded_hal_bus::{
-    i2c::self as i2c_bus,
-    util::AtomicCell,
-};
+use embedded_hal_bus::{i2c as i2c_bus, util::AtomicCell};
 use ssd1315::Ssd1315;
 use u8g2_fonts::{fonts, U8g2TextStyle};
 use {defmt_rtt as _, panic_probe as _};
@@ -47,8 +44,10 @@ bind_interrupts!(struct Irqs {
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
 
+static BUTTON_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
+
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
 
     const HEAP_SIZE: usize = 4096;
@@ -69,10 +68,13 @@ async fn main(_spawner: Spawner) {
         Default::default(),
     );
 
+    let button = exti::ExtiInput::new(p.PF14, p.EXTI14, gpio::Pull::Down);
+
     let i2c1 = AtomicCell::new(i2c1);
 
     let dht20 = Dht20::new(i2c_bus::AtomicDevice::new(&i2c1), Delay);
     let mut bmp280 = BME280::new_secondary(i2c_bus::AtomicDevice::new(&i2c1));
+
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
     let mut display = Ssd1315::new(display_interface);
 
@@ -99,11 +101,12 @@ async fn main(_spawner: Spawner) {
     let mut modes: Vec<Box<dyn AppMode<_>>> =
         vec![Box::new(environment_mode), Box::new(potentiometer_mode)];
 
+    _ = spawner.spawn(button_handler(button, &BUTTON_SIGNAL));
+
     loop {
         for mode in modes.iter_mut() {
-            let mode_start = Instant::now();
             loop {
-                if Instant::now() - mode_start > Duration::from_secs(5) {
+                if let Some(true) = &BUTTON_SIGNAL.try_take() {
                     break;
                 }
 
@@ -127,5 +130,18 @@ async fn main(_spawner: Spawner) {
                 Timer::after_millis(100).await;
             }
         }
+    }
+}
+
+#[task]
+async fn button_handler(
+    mut button: ExtiInput<'static>,
+    signal: &'static Signal<CriticalSectionRawMutex, bool>,
+) {
+    loop {
+        button.wait_for_high().await;
+        defmt::info!("signal");
+        signal.signal(true);
+        Timer::after_millis(200).await;
     }
 }

@@ -27,7 +27,7 @@ embassy-executor = { version = "0.7", features = ["task-arena-size-4096", "arch-
 embassy-sync = { version = "0.6" }
 embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"] }
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
-embassy-stm32 = { version = "0.2", features = ["defmt", "stm32f413zh", "unstable-pac", "memory-x", "time-driver-any" ]  }
+embassy-stm32 = { version = "0.2", features = ["defmt", "stm32f413zh", "unstable-pac", "memory-x", "time-driver-any", "exti" ]  }
 embedded-dht-rs = { version = "0.4.0", features = ["dht20"] }
 embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 ssd1315 = "0.2.2"
