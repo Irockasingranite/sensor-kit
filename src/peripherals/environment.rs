@@ -29,8 +29,8 @@ where
 
 impl<I, D> EnvironmentSensors for SensorKitEnvSensors<I, D>
 where
-    I: embedded_hal::i2c::I2c,
-    D: embedded_hal::delay::DelayNs,
+    I: embedded_hal::i2c::I2c + Send,
+    D: embedded_hal::delay::DelayNs + Send,
 {
     fn get_temperature(&mut self) -> Result<f32, PeripheralError> {
         self.dht20

@@ -9,12 +9,13 @@ mod peripherals;
 mod ui;
 
 use app::{AppMode, AppStyle};
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
-use mode::{environment::EnvironmentMode, potentiometer::PotentiometerMode};
-use peripherals::{SensorKitEnvSensors, SensorKitPotentiometer};
+use mode::potentiometer::PotentiometerMode;
+use mode::{environment::EnvironmentMode, light::LightSensorMode};
+use peripherals::{SensorKitEnvSensors, SensorKitLightSensor, SensorKitPotentiometer};
 use ui::TitleFrame;
 
-use alloc::{boxed::Box, vec, vec::Vec};
+use alloc::vec;
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use bme280::i2c::BME280;
 use core::mem::MaybeUninit;
 use display_interface_i2c::I2CInterface;
@@ -27,6 +28,7 @@ use embassy_stm32::{
     i2c::{self, I2c},
     time::Hertz,
 };
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, signal::Signal};
 use embassy_time::{Delay, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
@@ -85,7 +87,10 @@ async fn main(spawner: Spawner) {
 
     // Potentiometer ADC
     let adc = Adc::new(p.ADC1);
-    let adc_channel = p.PA3;
+    let adc = Arc::new(Mutex::<CriticalSectionRawMutex, _>::new(adc));
+
+    let potentiometer_adc_channel = p.PA3;
+    let light_sensor_adc_channel = p.PC1;
 
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
@@ -105,11 +110,18 @@ async fn main(spawner: Spawner) {
     let environment_mode = EnvironmentMode::new(sensors);
 
     // Potentiometer mode
-    let potentiometer = SensorKitPotentiometer::new(adc, adc_channel);
+    let potentiometer = SensorKitPotentiometer::new(adc.clone(), potentiometer_adc_channel);
     let potentiometer_mode = PotentiometerMode::new(potentiometer);
 
-    let mut modes: Vec<Box<dyn AppMode<_>>> =
-        vec![Box::new(environment_mode), Box::new(potentiometer_mode)];
+    // Light sensor mode.
+    let light_sensor = SensorKitLightSensor::new(adc.clone(), light_sensor_adc_channel);
+    let light_mode = LightSensorMode::new(light_sensor);
+
+    let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
+        Box::new(light_mode),
+        Box::new(environment_mode),
+        Box::new(potentiometer_mode),
+    ];
 
     // Spawn ancillary tasks
     _ = spawner.spawn(button_handler(button, &BUTTON_SIGNAL));
@@ -127,7 +139,7 @@ async fn main(spawner: Spawner) {
                 }
 
                 // Update state
-                mode.update();
+                mode.update().await;
 
                 // Set up frame with mode title
                 let frame = TitleFrame::new(

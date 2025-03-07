@@ -1,10 +1,13 @@
+use alloc::boxed::Box;
 use alloc::string::String;
+use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use u8g2_fonts::U8g2TextStyle;
 
 /// Marks an object that can update its internal state.
+#[async_trait]
 pub trait Update {
-    fn update(&mut self);
+    async fn update(&mut self);
 }
 
 /// Marks an object that can be drawn to a target as part of an application.

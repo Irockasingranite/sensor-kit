@@ -8,17 +8,23 @@ use embedded_graphics::{
 };
 use embedded_layout::prelude::*;
 
+/// A frame with a title centered above it.
 pub struct TitleFrame<'a, S, C> {
-    title: &'a str,
-    title_style: S,
-    frame_color: C,
-    area: Rectangle,
+    /// Title displayed above the frame.
+    pub title: &'a str,
+    /// Style used to draw the title.
+    pub title_style: S,
+    /// Color of the frame.
+    pub frame_color: C,
+    /// Area filled by the frame. Use [`Self::inner_area`] to get the inner area instead.
+    pub area: Rectangle,
 }
 
 impl<'a, S, C> TitleFrame<'a, S, C>
 where
-    S: TextRenderer,
+    S: TextRenderer<Color = C>,
 {
+    /// Create a new [`TitleFrame`].
     pub fn new(title: &'a str, title_style: S, frame_color: C, area: Rectangle) -> Self {
         Self {
             title,
@@ -28,6 +34,7 @@ where
         }
     }
 
+    /// Get the area inside the frame.
     pub fn inner_area(&self) -> Rectangle {
         self.area_below_title().offset(-5)
     }

@@ -1,9 +1,12 @@
 /// Environment sensors.
 mod environment;
+/// Light Sensor.
+mod light;
 /// Potentiometer.
 mod potentiometer;
 
 pub use environment::SensorKitEnvSensors;
+pub use light::SensorKitLightSensor;
 pub use potentiometer::SensorKitPotentiometer;
 
 use thiserror::Error;

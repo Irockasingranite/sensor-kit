@@ -5,10 +5,14 @@ use embedded_graphics::{
 };
 use embedded_layout::prelude::*;
 
+/// A horizontal, partially filled "loading bar"-like element.
 pub struct HorizontalBar<C> {
-    fill_pct: f32,
-    color: C,
-    area: Rectangle,
+    /// Percentage of the bar that is filled.
+    pub fill_pct: f32,
+    /// Color of the bar.
+    pub color: C,
+    /// Area filled by the bar.
+    pub area: Rectangle,
 }
 
 impl<C> HorizontalBar<C> {

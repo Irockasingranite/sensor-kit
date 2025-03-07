@@ -4,28 +4,23 @@ use async_trait::async_trait;
 use embassy_stm32::adc::{self, Adc, AdcChannel};
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex};
 
-use crate::mode::potentiometer::PotentiometerInput;
+use crate::mode::light::LightSensor;
 
-use super::PeripheralError;
-
-/// Struct containing peripherals used for sampling potentiometer setting.
-pub struct SensorKitPotentiometer<'a, ADC, CH>
+pub struct SensorKitLightSensor<'a, ADC, CH>
 where
     ADC: adc::Instance,
     CH: AdcChannel<ADC>,
 {
-    /// ADC measuring the signal.
     adc: Arc<Mutex<CriticalSectionRawMutex, Adc<'a, ADC>>>,
-    /// Specific ADC channel used.
     channel: CH,
 }
 
-impl<'a, ADC, CH> SensorKitPotentiometer<'a, ADC, CH>
+impl<'a, ADC, CH> SensorKitLightSensor<'a, ADC, CH>
 where
     ADC: adc::Instance,
     CH: AdcChannel<ADC>,
 {
-    const MAX_VALUE: u16 = 4096;
+    const MAX_VALUE: u16 = 2800;
 
     pub fn new(adc: Arc<Mutex<CriticalSectionRawMutex, Adc<'a, ADC>>>, channel: CH) -> Self {
         Self { adc, channel }
@@ -33,16 +28,15 @@ where
 }
 
 #[async_trait]
-impl<ADC, CH> PotentiometerInput for SensorKitPotentiometer<'_, ADC, CH>
+impl<ADC, CH> LightSensor for SensorKitLightSensor<'_, ADC, CH>
 where
     ADC: adc::Instance + Send,
-    CH: adc::AdcChannel<ADC> + Send,
+    CH: AdcChannel<ADC> + Send,
 {
-    async fn value_pct(&mut self) -> Result<f32, PeripheralError> {
+    async fn get_value(&mut self) -> Result<f32, super::PeripheralError> {
         let mut adc = self.adc.lock().await;
         let value = adc.blocking_read(&mut self.channel);
-        let inverted = Self::MAX_VALUE - value;
-        let value_pct = 100.0 * (inverted as f32 / Self::MAX_VALUE as f32);
+        let value_pct = 100.0 * (value as f32 / Self::MAX_VALUE as f32);
         Ok(value_pct)
     }
 }

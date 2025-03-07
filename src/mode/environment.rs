@@ -1,5 +1,6 @@
 use alloc::boxed::Box;
 use alloc::string::String;
+use async_trait::async_trait;
 use core::fmt::Write;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
@@ -38,8 +39,9 @@ impl<'a> EnvironmentMode<'a> {
     }
 }
 
+#[async_trait]
 impl Update for EnvironmentMode<'_> {
-    fn update(&mut self) {
+    async fn update(&mut self) {
         self.temperature_c = self.sensors.get_temperature().ok();
         self.humidity_pct = self.sensors.get_humidity().ok();
         self.pressure_kpa = self.sensors.get_pressure().ok();
@@ -116,7 +118,7 @@ where
 }
 
 /// Defines interface for environment sensors that can be used by the [`EnvironmentMode`].
-pub trait EnvironmentSensors {
+pub trait EnvironmentSensors: Send {
     /// Return the current temperature in °C.
     fn get_temperature(&mut self) -> Result<f32, PeripheralError>;
     /// Return the current humidity in %.

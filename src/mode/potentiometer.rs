@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::format;
 use alloc::string::String;
+use async_trait::async_trait;
 use embedded_graphics::text::Text;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use embedded_layout::align::Align;
@@ -32,9 +33,10 @@ impl<'a> PotentiometerMode<'a> {
     }
 }
 
+#[async_trait]
 impl Update for PotentiometerMode<'_> {
-    fn update(&mut self) {
-        self.value_pct = self.input.value_pct().ok();
+    async fn update(&mut self) {
+        self.value_pct = self.input.value_pct().await.ok();
     }
 }
 
@@ -86,8 +88,9 @@ where
     }
 }
 
+#[async_trait]
 /// Defined the interface for a peripheral to be used as input for the [`PotentiometerMode`].
-pub trait PotentiometerInput {
+pub trait PotentiometerInput: Send {
     /// Returns the current signal value in %.
-    fn value_pct(&mut self) -> Result<f32, PeripheralError>;
+    async fn value_pct(&mut self) -> Result<f32, PeripheralError>;
 }
