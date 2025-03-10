@@ -12,7 +12,7 @@ use app::{AppMode, AppStyle};
 use embassy_stm32::timer::low_level::CountingMode;
 use embassy_stm32::timer::simple_pwm::{PwmPin, SimplePwm};
 use mode::{EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode};
-use peripherals::{AnalogInput, PwmLed, ReversedAnalogInput, SensorKitEnvSensors};
+use peripherals::{AnalogInput, ReversedAnalogInput, SensorKitEnvSensors, SharedPwm};
 use ui::TitleFrame;
 
 use alloc::vec;
@@ -28,6 +28,7 @@ use embassy_stm32::{
     gpio,
     i2c::{self, I2c},
     time::Hertz,
+    timer,
 };
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, signal::Signal};
 use embassy_time::{Delay, Timer};
@@ -111,13 +112,9 @@ async fn main(spawner: Spawner) {
         Hertz::hz(50),
         CountingMode::EdgeAlignedUp,
     );
+    let pwm: Arc<Mutex<CriticalSectionRawMutex, _>> = Arc::new(Mutex::new(pwm));
 
-    let pwm_channels = pwm.split();
-    let mut led_pwm_channel = pwm_channels.ch1;
-    let mut buzzer_pwm_channel = pwm_channels.ch2;
-    led_pwm_channel.enable();
-    buzzer_pwm_channel.enable();
-    let pwm_led = PwmLed::new(led_pwm_channel);
+    let pwm_led = SharedPwm::new(pwm, timer::Channel::Ch1);
 
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);

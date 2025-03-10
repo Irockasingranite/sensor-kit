@@ -27,6 +27,14 @@ impl<'a> LedMode<'a> {
 #[async_trait]
 pub trait LedOutput: Send {
     async fn set_brightness(&mut self, brightness_pct: f32) -> Result<(), PeripheralError>;
+
+    async fn enable(&mut self) -> Result<(), PeripheralError> {
+        Ok(())
+    }
+
+    async fn disable(&mut self) -> Result<(), PeripheralError> {
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -76,12 +84,11 @@ where
         String::from("Led")
     }
 
+    async fn enter(&mut self) -> Result<(), PeripheralError> {
+        self.led.enable().await
+    }
+
     async fn exit(&mut self) -> Result<(), PeripheralError> {
-        defmt::info!("Exit LED mode");
-        self.led
-            .set_brightness(0.0)
-            .await
-            .map_err(|_| PeripheralError::PwmError)?;
-        Ok(())
+        self.led.disable().await
     }
 }
