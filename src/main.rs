@@ -11,6 +11,7 @@ mod ui;
 use app::{AppMode, AppStyle};
 use embassy_stm32::timer::low_level::CountingMode;
 use embassy_stm32::timer::simple_pwm::{PwmPin, SimplePwm};
+use mode::buzzer::BuzzerMode;
 use mode::{EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode};
 use peripherals::{AnalogInput, ReversedAnalogInput, SensorKitEnvSensors, SharedPwm};
 use ui::TitleFrame;
@@ -114,7 +115,8 @@ async fn main(spawner: Spawner) {
     );
     let pwm: Arc<Mutex<CriticalSectionRawMutex, _>> = Arc::new(Mutex::new(pwm));
 
-    let pwm_led = SharedPwm::new(pwm, timer::Channel::Ch1);
+    let pwm_led = SharedPwm::new(pwm.clone(), timer::Channel::Ch1);
+    let buzzer_pwm = SharedPwm::new(pwm.clone(), timer::Channel::Ch2);
 
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
@@ -147,12 +149,16 @@ async fn main(spawner: Spawner) {
     // LED mode
     let led_mode = LedMode::new(pwm_led, potentiometer.clone());
 
+    // Buzzer mode
+    let buzzer_mode = BuzzerMode::new(potentiometer.clone(), buzzer_pwm);
+
     let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
-        Box::new(led_mode),
-        Box::new(sound_mode),
         Box::new(environment_mode),
         Box::new(potentiometer_mode),
         Box::new(light_mode),
+        Box::new(sound_mode),
+        Box::new(led_mode),
+        Box::new(buzzer_mode),
     ];
 
     // Spawn ancillary tasks

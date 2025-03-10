@@ -6,7 +6,7 @@ use embassy_stm32::{
 };
 use embassy_sync::{blocking_mutex::raw::RawMutex, mutex::Mutex};
 
-use crate::mode::led::LedOutput;
+use crate::mode::{buzzer::BuzzerOutput, led::LedOutput};
 
 use super::PeripheralError;
 
@@ -82,12 +82,35 @@ where
     }
 
     async fn enable(&mut self) -> Result<(), PeripheralError> {
-        self.enable().await?;
         self.set_frequency(Hertz::hz(100)).await?;
+        self.enable().await?;
         Ok(())
     }
 
     async fn disable(&mut self) -> Result<(), PeripheralError> {
         self.disable().await
+    }
+}
+
+#[async_trait]
+impl<P> BuzzerOutput for P
+where
+    P: Pwm + Send,
+{
+    async fn enable(&mut self) -> Result<(), PeripheralError> {
+        self.set_duty_cycle_percent(50).await?;
+        self.enable().await?;
+        Ok(())
+    }
+
+    async fn disable(&mut self) -> Result<(), PeripheralError> {
+        self.disable().await
+    }
+
+    async fn set_frequency(&mut self, freq: fugit::HertzU32) -> Result<(), PeripheralError> {
+        let hertz = freq.to_Hz();
+        let freq = Hertz::hz(hertz);
+        self.set_frequency(freq).await?;
+        Ok(())
     }
 }

@@ -3,23 +3,21 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use embedded_layout::prelude::*;
 
+use super::inputs::PctInput;
+use crate::app::{AppMode, Draw, Update};
 use crate::ui::HorizontalBar;
-use crate::{
-    app::{AppMode, Draw, Update},
-    peripherals::PeripheralError,
-};
 
 // Struct defining the 'Sound Sensor' mode. Sample data from the sound sensor and displays it as a
 // bar.
 pub struct SoundMode<'a> {
     /// Input used.
-    input: Box<dyn SoundInput + 'a>,
+    input: Box<dyn PctInput + 'a>,
     /// Value in %.
     value_pct: Option<f32>,
 }
 
 impl<'a> SoundMode<'a> {
-    pub fn new(input: impl SoundInput + 'a) -> Self {
+    pub fn new(input: impl PctInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,
@@ -30,7 +28,7 @@ impl<'a> SoundMode<'a> {
 #[async_trait]
 impl Update for SoundMode<'_> {
     async fn update(&mut self) {
-        self.value_pct = self.input.get_value().await.ok();
+        self.value_pct = self.input.input_pct().await.ok();
     }
 }
 
@@ -71,9 +69,4 @@ where
     fn title(&self) -> alloc::string::String {
         String::from("Sound Sensor")
     }
-}
-
-#[async_trait]
-pub trait SoundInput: Send {
-    async fn get_value(&mut self) -> Result<f32, PeripheralError>;
 }

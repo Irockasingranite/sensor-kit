@@ -5,12 +5,8 @@ use embassy_stm32::adc::{self, Adc, AdcChannel};
 use embassy_sync::blocking_mutex::raw::RawMutex;
 use embassy_sync::mutex::Mutex;
 
-use crate::mode::led::LedModeInput;
-use crate::mode::light::LightSensor;
-use crate::mode::potentiometer::PotentiometerInput;
-use crate::mode::sound::SoundInput;
-
 use super::PeripheralError;
+use crate::mode::inputs::PctInput;
 
 /// An analog input measured by an ADC.
 pub struct AnalogInput<'a, ADC, CH, M>
@@ -80,18 +76,13 @@ where
 }
 
 #[async_trait]
-trait ValuePct {
-    async fn get_value_pct(&mut self) -> Result<f32, PeripheralError>;
-}
-
-#[async_trait]
-impl<ADC, CH, M> ValuePct for AnalogInput<'_, ADC, CH, M>
+impl<ADC, CH, M> PctInput for AnalogInput<'_, ADC, CH, M>
 where
     ADC: adc::Instance + Send,
     CH: AdcChannel<ADC> + Send,
     M: RawMutex + Send + Sync,
 {
-    async fn get_value_pct(&mut self) -> Result<f32, PeripheralError> {
+    async fn input_pct(&mut self) -> Result<f32, PeripheralError> {
         let value_raw = self.get_value_raw().await?;
         let pct = 100.0 * (value_raw as f32 / self.max_value as f32);
         Ok(pct)
@@ -99,79 +90,15 @@ where
 }
 
 #[async_trait]
-impl<ADC, CH, M> ValuePct for ReversedAnalogInput<'_, ADC, CH, M>
+impl<ADC, CH, M> PctInput for ReversedAnalogInput<'_, ADC, CH, M>
 where
     ADC: adc::Instance + Send,
     CH: AdcChannel<ADC> + Send,
     M: RawMutex + Send + Sync,
 {
-    async fn get_value_pct(&mut self) -> Result<f32, PeripheralError> {
+    async fn input_pct(&mut self) -> Result<f32, PeripheralError> {
         let value = self.inner.get_value_pct().await?;
         let reversed = 100.0 - value;
         Ok(reversed)
-    }
-}
-
-#[async_trait]
-impl<V> PotentiometerInput for V
-where
-    V: ValuePct + Send,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        self.get_value_pct().await
-    }
-}
-
-#[async_trait]
-impl<V, M> PotentiometerInput for Arc<Mutex<M, V>>
-where
-    V: ValuePct + Send,
-    M: RawMutex + Send + Sync,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        let mut input = self.lock().await;
-        PotentiometerInput::get_value(&mut *input).await
-    }
-}
-
-#[async_trait]
-impl<V> LightSensor for V
-where
-    V: ValuePct + Send,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        self.get_value_pct().await
-    }
-}
-
-#[async_trait]
-impl<V> SoundInput for V
-where
-    V: ValuePct + Send,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        self.get_value_pct().await
-    }
-}
-
-#[async_trait]
-impl<V> LedModeInput for V
-where
-    V: ValuePct + Send,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        self.get_value_pct().await
-    }
-}
-
-#[async_trait]
-impl<V, M> LedModeInput for Arc<Mutex<M, V>>
-where
-    V: ValuePct + Send,
-    M: RawMutex + Send + Sync,
-{
-    async fn get_value(&mut self) -> Result<f32, PeripheralError> {
-        let mut input = self.lock().await;
-        LedModeInput::get_value(&mut *input).await
     }
 }

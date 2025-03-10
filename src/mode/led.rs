@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, text::Text};
 use embedded_layout::prelude::*;
 
+use super::inputs::PctInput;
 use crate::{
     app::{AppMode, Draw, Update},
     peripherals::PeripheralError,
@@ -10,12 +11,12 @@ use crate::{
 
 pub struct LedMode<'a> {
     led: Box<dyn LedOutput + 'a>,
-    input: Box<dyn LedModeInput + 'a>,
+    input: Box<dyn PctInput + Send + 'a>,
     brightness_pct: Option<f32>,
 }
 
 impl<'a> LedMode<'a> {
-    pub fn new(led: impl LedOutput + 'a, input: impl LedModeInput + 'a) -> Self {
+    pub fn new(led: impl LedOutput + 'a, input: impl PctInput + 'a) -> Self {
         Self {
             led: Box::new(led),
             input: Box::new(input),
@@ -38,14 +39,9 @@ pub trait LedOutput: Send {
 }
 
 #[async_trait]
-pub trait LedModeInput: Send {
-    async fn get_value(&mut self) -> Result<f32, PeripheralError>;
-}
-
-#[async_trait]
 impl Update for LedMode<'_> {
     async fn update(&mut self) {
-        self.brightness_pct = self.input.get_value().await.ok();
+        self.brightness_pct = self.input.input_pct().await.ok();
         let brightness = self.brightness_pct.unwrap_or(0.0);
         _ = self.led.set_brightness(brightness).await;
     }

@@ -3,21 +3,19 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Circle};
 use embedded_layout::prelude::*;
 
+use super::inputs::PctInput;
+use crate::app::{AppMode, Draw, Update};
 use crate::ui::FilledCircle;
-use crate::{
-    app::{AppMode, Draw, Update},
-    peripherals::PeripheralError,
-};
 
 /// Struct defining the 'Light Sensor' mode. Samples data from a photo-resistor and displays value
 /// as a partially filled circle.
 pub struct LightSensorMode<'a> {
-    input: Box<dyn LightSensor + 'a>,
+    input: Box<dyn PctInput + 'a>,
     value_pct: Option<f32>,
 }
 
 impl<'a> LightSensorMode<'a> {
-    pub fn new(input: impl LightSensor + 'a) -> Self {
+    pub fn new(input: impl PctInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,
@@ -28,7 +26,7 @@ impl<'a> LightSensorMode<'a> {
 #[async_trait]
 impl Update for LightSensorMode<'_> {
     async fn update(&mut self) {
-        self.value_pct = self.input.get_value().await.ok();
+        self.value_pct = self.input.input_pct().await.ok();
     }
 }
 
@@ -66,10 +64,4 @@ where
     fn title(&self) -> alloc::string::String {
         String::from("Light Sensor")
     }
-}
-
-#[async_trait]
-/// Defines interface for a light sensor that can be used by the [`LightSensorMode`].
-pub trait LightSensor: Send {
-    async fn get_value(&mut self) -> Result<f32, PeripheralError>;
 }

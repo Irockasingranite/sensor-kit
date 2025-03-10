@@ -8,8 +8,8 @@ use embedded_layout::align::Align;
 use embedded_layout::layout::linear::{FixedMargin, LinearLayout};
 use embedded_layout::prelude::*;
 
+use super::inputs::PctInput;
 use crate::app::{AppMode, AppStyle};
-use crate::peripherals::PeripheralError;
 use crate::{
     app::{Draw, Update},
     ui::HorizontalBar,
@@ -19,13 +19,13 @@ use crate::{
 /// both a percentage and a bar.
 pub struct PotentiometerMode<'a> {
     /// The potentiometer used as input.
-    input: Box<dyn PotentiometerInput + 'a>,
+    input: Box<dyn PctInput + 'a>,
     /// Signal value in %.
     value_pct: Option<f32>,
 }
 
 impl<'a> PotentiometerMode<'a> {
-    pub fn new(input: impl PotentiometerInput + 'a) -> Self {
+    pub fn new(input: impl PctInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,
@@ -36,7 +36,7 @@ impl<'a> PotentiometerMode<'a> {
 #[async_trait]
 impl Update for PotentiometerMode<'_> {
     async fn update(&mut self) {
-        self.value_pct = self.input.get_value().await.ok();
+        self.value_pct = self.input.input_pct().await.ok();
     }
 }
 
@@ -87,11 +87,4 @@ where
     fn title(&self) -> String {
         String::from("Potentiometer")
     }
-}
-
-#[async_trait]
-/// Defined the interface for a peripheral to be used as input for the [`PotentiometerMode`].
-pub trait PotentiometerInput: Send {
-    /// Returns the current signal value in %.
-    async fn get_value(&mut self) -> Result<f32, PeripheralError>;
 }

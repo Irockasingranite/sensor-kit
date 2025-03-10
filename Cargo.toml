@@ -39,6 +39,8 @@ bme280 = { version = "0.5.1", features = ["async"] }
 thiserror = { version = "2.0.12", default-features = false }
 embedded-alloc = "0.6.0"
 async-trait = "0.1.87"
+fugit = { version = "0.3.7", features = ["defmt"] }
+micromath = "2.1.0"
 
 [profile.release]
 debug = 2
