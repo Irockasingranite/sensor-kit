@@ -63,6 +63,7 @@ where
     }
 }
 
+#[async_trait]
 impl<D> AppMode<D> for SoundMode<'_>
 where
     D: DrawTarget,

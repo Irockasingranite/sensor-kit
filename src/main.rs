@@ -10,10 +10,7 @@ mod ui;
 
 use app::{AppMode, AppStyle};
 use embassy_stm32::timer::low_level::CountingMode;
-use embassy_stm32::timer::{
-    self,
-    simple_pwm::{PwmPin, SimplePwm},
-};
+use embassy_stm32::timer::simple_pwm::{PwmPin, SimplePwm};
 use mode::{EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode};
 use peripherals::{AnalogInput, PwmLed, ReversedAnalogInput, SensorKitEnvSensors};
 use ui::TitleFrame;
@@ -103,19 +100,24 @@ async fn main(spawner: Spawner) {
         Arc::new(Mutex::new(potentiometer_input));
 
     // PWM
-    let pwm_pin = PwmPin::new_ch1(p.PE9, gpio::OutputType::PushPull);
-    let mut pwm = SimplePwm::new(
+    let led_pin = PwmPin::new_ch1(p.PE9, gpio::OutputType::PushPull);
+    let buzzer_pin = PwmPin::new_ch2(p.PE11, gpio::OutputType::PushPull);
+    let pwm = SimplePwm::new(
         p.TIM1,
-        Some(pwm_pin),
+        Some(led_pin),
+        Some(buzzer_pin),
         None,
         None,
-        None,
-        Hertz::hz(100),
+        Hertz::hz(50),
         CountingMode::EdgeAlignedUp,
     );
-    let mut pwm_channel = pwm.channel(timer::Channel::Ch1);
-    pwm_channel.enable();
-    let pwm_led = PwmLed::new(pwm_channel);
+
+    let pwm_channels = pwm.split();
+    let mut led_pwm_channel = pwm_channels.ch1;
+    let mut buzzer_pwm_channel = pwm_channels.ch2;
+    led_pwm_channel.enable();
+    buzzer_pwm_channel.enable();
+    let pwm_led = PwmLed::new(led_pwm_channel);
 
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
@@ -163,11 +165,13 @@ async fn main(spawner: Spawner) {
     loop {
         for mode in modes.iter_mut() {
             let title = mode.title();
+            _ = mode.enter().await;
 
             // Continuously run the active mode
             loop {
                 // If the button handler signals us, switch to the next mode
                 if let Some(true) = &BUTTON_SIGNAL.try_take() {
+                    _ = mode.exit().await;
                     break;
                 }
 

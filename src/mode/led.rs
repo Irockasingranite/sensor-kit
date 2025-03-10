@@ -67,11 +67,21 @@ where
     }
 }
 
+#[async_trait]
 impl<D> AppMode<D> for LedMode<'_>
 where
     D: DrawTarget,
 {
     fn title(&self) -> String {
         String::from("Led")
+    }
+
+    async fn exit(&mut self) -> Result<(), PeripheralError> {
+        defmt::info!("Exit LED mode");
+        self.led
+            .set_brightness(0.0)
+            .await
+            .map_err(|_| PeripheralError::PwmError)?;
+        Ok(())
     }
 }

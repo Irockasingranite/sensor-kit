@@ -58,6 +58,7 @@ where
     }
 }
 
+#[async_trait]
 impl<D> AppMode<D> for LightSensorMode<'_>
 where
     D: DrawTarget,

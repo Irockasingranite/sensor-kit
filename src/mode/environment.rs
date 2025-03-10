@@ -108,6 +108,7 @@ where
     }
 }
 
+#[async_trait]
 impl<D> AppMode<D> for EnvironmentMode<'_>
 where
     D: DrawTarget,

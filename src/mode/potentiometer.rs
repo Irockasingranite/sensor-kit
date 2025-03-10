@@ -79,6 +79,7 @@ where
     }
 }
 
+#[async_trait]
 impl<D> AppMode<D> for PotentiometerMode<'_>
 where
     D: DrawTarget,

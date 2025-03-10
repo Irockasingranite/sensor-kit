@@ -4,6 +4,8 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use u8g2_fonts::U8g2TextStyle;
 
+use crate::peripherals::PeripheralError;
+
 /// Marks an object that can update its internal state.
 #[async_trait]
 pub trait Update {
@@ -48,11 +50,20 @@ impl<C> AppStyle<C> {
     }
 }
 
+#[async_trait]
 /// An Application mode that can perform an update->draw loop.
-pub trait AppMode<D>: Update + Draw<D>
+pub trait AppMode<D>: Update + Draw<D> + Send
 where
     D: DrawTarget,
 {
     /// Returns the title that should be displayed.
     fn title(&self) -> String;
+
+    async fn enter(&mut self) -> Result<(), PeripheralError> {
+        Ok(())
+    }
+
+    async fn exit(&mut self) -> Result<(), PeripheralError> {
+        Ok(())
+    }
 }
