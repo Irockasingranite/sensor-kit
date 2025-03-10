@@ -9,10 +9,13 @@ mod peripherals;
 mod ui;
 
 use app::{AppMode, AppStyle};
-use mode::potentiometer::PotentiometerMode;
-use mode::sound::SoundMode;
-use mode::{environment::EnvironmentMode, light::LightSensorMode};
-use peripherals::{AnalogInput, SensorKitEnvSensors};
+use embassy_stm32::timer::low_level::CountingMode;
+use embassy_stm32::timer::{
+    self,
+    simple_pwm::{PwmPin, SimplePwm},
+};
+use mode::{EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode};
+use peripherals::{AnalogInput, PwmLed, ReversedAnalogInput, SensorKitEnvSensors};
 use ui::TitleFrame;
 
 use alloc::vec;
@@ -94,6 +97,26 @@ async fn main(spawner: Spawner) {
     let light_sensor_adc_channel = p.PC1;
     let sound_sensor_adc_channel = p.PC3;
 
+    let potentiometer_input =
+        ReversedAnalogInput::new(adc.clone(), potentiometer_adc_channel, 4096);
+    let potentiometer: Arc<Mutex<CriticalSectionRawMutex, _>> =
+        Arc::new(Mutex::new(potentiometer_input));
+
+    // PWM
+    let pwm_pin = PwmPin::new_ch1(p.PE9, gpio::OutputType::PushPull);
+    let mut pwm = SimplePwm::new(
+        p.TIM1,
+        Some(pwm_pin),
+        None,
+        None,
+        None,
+        Hertz::hz(100),
+        CountingMode::EdgeAlignedUp,
+    );
+    let mut pwm_channel = pwm.channel(timer::Channel::Ch1);
+    pwm_channel.enable();
+    let pwm_led = PwmLed::new(pwm_channel);
+
     // Display
     let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
     let mut display = Ssd1315::new(display_interface);
@@ -112,8 +135,7 @@ async fn main(spawner: Spawner) {
     let environment_mode = EnvironmentMode::new(sensors);
 
     // Potentiometer mode
-    let potentiometer = AnalogInput::new(adc.clone(), potentiometer_adc_channel, 4096);
-    let potentiometer_mode = PotentiometerMode::new(potentiometer);
+    let potentiometer_mode = PotentiometerMode::new(potentiometer.clone());
 
     // Light sensor mode.
     let light_sensor = AnalogInput::new(adc.clone(), light_sensor_adc_channel, 2800);
@@ -123,7 +145,11 @@ async fn main(spawner: Spawner) {
     let sound_sensor = AnalogInput::new(adc.clone(), sound_sensor_adc_channel, 1500);
     let sound_mode = SoundMode::new(sound_sensor);
 
+    // LED mode
+    let led_mode = LedMode::new(pwm_led, potentiometer.clone());
+
     let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
+        Box::new(led_mode),
         Box::new(sound_mode),
         Box::new(environment_mode),
         Box::new(potentiometer_mode),
