@@ -1,3 +1,5 @@
+/// Acceleration mode
+pub mod acceleration;
 /// Buzzer mode.
 pub mod buzzer;
 /// Environment mode.
@@ -16,6 +18,7 @@ pub use led::LedMode;
 pub use light::LightSensorMode;
 pub use potentiometer::PotentiometerMode;
 pub use sound::SoundMode;
+pub use acceleration::AccelerationMode;
 
 pub mod inputs {
     use crate::peripherals::PeripheralError;

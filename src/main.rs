@@ -9,16 +9,20 @@ mod peripherals;
 mod ui;
 
 use app::{AppMode, AppStyle};
+use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use embassy_stm32::timer::low_level::CountingMode;
 use embassy_stm32::timer::simple_pwm::{PwmPin, SimplePwm};
 use mode::buzzer::BuzzerMode;
-use mode::{EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode};
+use mode::{
+    AccelerationMode, EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode,
+};
 use peripherals::{AnalogInput, ReversedAnalogInput, SensorKitEnvSensors, SharedPwm};
 use ui::TitleFrame;
 
 use alloc::vec;
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
 use bme280::i2c::BME280;
+use core::cell::RefCell;
 use core::mem::MaybeUninit;
 use display_interface_i2c::I2CInterface;
 use embassy_executor::{task, Spawner};
@@ -28,20 +32,22 @@ use embassy_stm32::{
     exti::{self, ExtiInput},
     gpio,
     i2c::{self, I2c},
+    mode::Async,
     time::Hertz,
     timer,
-    mode::Async,
 };
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, blocking_mutex::Mutex as BlockingMutex, signal::Signal};
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex, blocking_mutex::Mutex as BlockingMutex,
+    mutex::Mutex, signal::Signal,
+};
 use embassy_time::{Delay, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
+use lis3dh::Lis3dh;
 use ssd1315::Ssd1315;
-use u8g2_fonts::{fonts, U8g2TextStyle};
 use static_cell::StaticCell;
-use core::cell::RefCell;
-use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
+use u8g2_fonts::{fonts, U8g2TextStyle};
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -54,8 +60,8 @@ static HEAP: Heap = Heap::empty();
 
 static BUTTON_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
-static I2C1_BUS: StaticCell<BlockingMutex<CriticalSectionRawMutex, RefCell<I2c<'static, Async>>>> = StaticCell::new();
-
+static I2C1_BUS: StaticCell<BlockingMutex<CriticalSectionRawMutex, RefCell<I2c<'static, Async>>>> =
+    StaticCell::new();
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -85,6 +91,10 @@ async fn main(spawner: Spawner) {
 
     // Button used for mode switching
     let button = exti::ExtiInput::new(p.PF14, p.EXTI14, gpio::Pull::Down);
+
+    // Accelerometer
+    let lis3dh = Lis3dh::new_i2c(I2cDevice::new(i2c1), lis3dh::SlaveAddr::Alternate)
+        .expect("Failed to initialize LIS3DHTR");
 
     // Environment sensors
     let dht20 = Dht20::new(I2cDevice::new(i2c1), Delay);
@@ -157,9 +167,13 @@ async fn main(spawner: Spawner) {
     // Buzzer mode
     let buzzer_mode = BuzzerMode::new(potentiometer.clone(), buzzer_pwm);
 
+    // Acceleration mode
+    let acceleration_mode = AccelerationMode::new(lis3dh);
+
     let mut modes: Vec<Box<dyn AppMode<_>>> = vec![
         Box::new(environment_mode),
         Box::new(potentiometer_mode),
+        Box::new(acceleration_mode),
         Box::new(light_mode),
         Box::new(sound_mode),
         Box::new(led_mode),

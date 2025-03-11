@@ -1,3 +1,5 @@
+/// Accelerometer
+mod accelerometer;
 /// Analog Input.
 mod analog_input;
 /// Environment sensors.
