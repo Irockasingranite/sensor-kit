@@ -29,7 +29,6 @@ embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"]
 cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
 embassy-stm32 = { version = "0.2", features = ["defmt", "stm32f413zh", "unstable-pac", "memory-x", "time-driver-any", "exti" ]  }
 embedded-dht-rs = { version = "0.4.0", features = ["dht20"] }
-embedded-hal-bus = { version = "0.3.0", features = ["async"] }
 ssd1315 = "0.2.2"
 embedded-graphics = "0.8.1"
 display-interface-i2c = "0.5.0"
@@ -41,6 +40,8 @@ embedded-alloc = "0.6.0"
 async-trait = "0.1.87"
 fugit = { version = "0.3.7", features = ["defmt"] }
 micromath = "2.1.0"
+embassy-embedded-hal = { version = "0.3.0", features = ["defmt"] }
+static_cell = "2.1.0"
 
 [profile.release]
 debug = 2

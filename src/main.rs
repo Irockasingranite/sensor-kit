@@ -30,15 +30,18 @@ use embassy_stm32::{
     i2c::{self, I2c},
     time::Hertz,
     timer,
+    mode::Async,
 };
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, signal::Signal};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, mutex::Mutex, blocking_mutex::Mutex as BlockingMutex, signal::Signal};
 use embassy_time::{Delay, Timer};
 use embedded_alloc::LlffHeap as Heap;
 use embedded_dht_rs::dht20::Dht20;
 use embedded_graphics::{pixelcolor::BinaryColor, prelude::*};
-use embedded_hal_bus::{i2c as i2c_bus, util::AtomicCell};
 use ssd1315::Ssd1315;
 use u8g2_fonts::{fonts, U8g2TextStyle};
+use static_cell::StaticCell;
+use core::cell::RefCell;
+use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -50,6 +53,9 @@ bind_interrupts!(struct Irqs {
 static HEAP: Heap = Heap::empty();
 
 static BUTTON_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
+
+static I2C1_BUS: StaticCell<BlockingMutex<CriticalSectionRawMutex, RefCell<I2c<'static, Async>>>> = StaticCell::new();
+
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -72,18 +78,17 @@ async fn main(spawner: Spawner) {
         Hertz::khz(400),
         Default::default(),
     );
+    let i2c1 = BlockingMutex::new(RefCell::new(i2c1));
+    let i2c1 = I2C1_BUS.init(i2c1);
 
     // Set up peripherals
 
     // Button used for mode switching
     let button = exti::ExtiInput::new(p.PF14, p.EXTI14, gpio::Pull::Down);
 
-    // I2C bus
-    let i2c1 = AtomicCell::new(i2c1);
-
     // Environment sensors
-    let dht20 = Dht20::new(i2c_bus::AtomicDevice::new(&i2c1), Delay);
-    let mut bmp280 = BME280::new_secondary(i2c_bus::AtomicDevice::new(&i2c1));
+    let dht20 = Dht20::new(I2cDevice::new(i2c1), Delay);
+    let mut bmp280 = BME280::new_secondary(I2cDevice::new(i2c1));
     bmp280
         .init(&mut Delay)
         .expect("Failed to initialize BMP280)");
@@ -119,7 +124,7 @@ async fn main(spawner: Spawner) {
     let buzzer_pwm = SharedPwm::new(pwm.clone(), timer::Channel::Ch2);
 
     // Display
-    let display_interface = I2CInterface::new(i2c_bus::AtomicDevice::new(&i2c1), 0x3c, 0b01000000);
+    let display_interface = I2CInterface::new(I2cDevice::new(i2c1), 0x3c, 0b01000000);
     let mut display = Ssd1315::new(display_interface);
     display.init_screen();
     display.flush_screen();
