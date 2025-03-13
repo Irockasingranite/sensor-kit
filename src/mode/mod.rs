@@ -13,12 +13,12 @@ pub mod potentiometer;
 /// Sound mode.
 pub mod sound;
 
+pub use acceleration::AccelerationMode;
 pub use environment::EnvironmentMode;
 pub use led::LedMode;
 pub use light::LightSensorMode;
 pub use potentiometer::PotentiometerMode;
 pub use sound::SoundMode;
-pub use acceleration::AccelerationMode;
 
 pub mod inputs {
     use crate::peripherals::PeripheralError;
