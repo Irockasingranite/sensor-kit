@@ -4,19 +4,15 @@ use async_trait::async_trait;
 use core::ops::Mul;
 use embassy_time::Instant;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{
-    Circle, PrimitiveStyle, PrimitiveStyleBuilder, Rectangle, StrokeAlignment, Styled,
-};
+use embedded_graphics::primitives::{Circle, PrimitiveStyleBuilder, Rectangle, StrokeAlignment};
 use embedded_layout::align::Align;
 use embedded_layout::layout::linear::{FixedMargin, LinearLayout};
 use embedded_layout::prelude::*;
-use micromath::{
-    vector::{F32x2, Vector},
-    F32Ext,
-};
+use micromath::{vector::F32x2, F32Ext};
 
 use crate::app::AppMode;
-use crate::ui::VectorBox;
+use crate::ui::layout::CenteredWithOffset;
+use crate::ui::Vector;
 use crate::{
     app::{Draw, Update},
     peripherals::PeripheralError,
@@ -91,6 +87,7 @@ impl Update for AccelerationMode<'_> {
             };
 
             // Apply friction
+            use micromath::vector::Vector;
             let vel_mag = self.ball_velocity.magnitude();
             let friction = self.ball_velocity.mul(vel_mag.powi(2)).mul(0.01);
             acc -= friction;
@@ -149,21 +146,14 @@ where
             None => F32x2 { x: 0.0, y: 0.0 },
         };
 
-        let indicator_style = PrimitiveStyleBuilder::new()
+        let vector_style = PrimitiveStyleBuilder::new()
             .stroke_width(1)
             .stroke_color(style.default_color)
             .stroke_alignment(StrokeAlignment::Center)
             .build();
 
-        let indicator = VectorBox::new(
-            Rectangle::new(
-                Point::zero(),
-                Size::new(smallest_dimension as u32, smallest_dimension as u32),
-            ),
-            acc_2d,
-            1.0,
-        )
-        .into_styled(indicator_style);
+        let vector = Vector::new(Point::zero(), Point::new(acc_2d.x as i32, acc_2d.y as i32))
+            .into_styled(vector_style);
 
         // Frame with ball
         let frame_height = draw_area.size.height as f32 * 0.9;
@@ -190,9 +180,9 @@ where
 
         let ball = Circle::new(Point::zero(), Self::BALL_DIAMETER).into_styled(ball_style);
 
-        let ball_in_frame = BallInFrame::new(frame, ball, offset);
+        let ball_in_frame = CenteredWithOffset::new(frame, ball, offset).arrange();
 
-        let layout = LinearLayout::horizontal(Chain::new(indicator).append(ball_in_frame))
+        let layout = LinearLayout::horizontal(Chain::new(vector).append(ball_in_frame))
             .with_spacing(FixedMargin(5))
             .with_alignment(vertical::Top)
             .arrange()
@@ -211,80 +201,5 @@ where
 {
     fn title(&self) -> String {
         String::from("Acceleration")
-    }
-}
-
-struct BallInFrame<C>
-where
-    C: PixelColor,
-{
-    frame: Styled<Rectangle, PrimitiveStyle<C>>,
-    ball: Styled<Circle, PrimitiveStyle<C>>,
-    offset_from_center: Point,
-}
-
-impl<C> BallInFrame<C>
-where
-    C: PixelColor,
-{
-    pub fn new(
-        frame: Styled<Rectangle, PrimitiveStyle<C>>,
-        ball: Styled<Circle, PrimitiveStyle<C>>,
-        offset_from_center: Point,
-    ) -> Self {
-        Self {
-            frame,
-            ball,
-            offset_from_center,
-        }
-    }
-}
-
-impl<C> Transform for BallInFrame<C>
-where
-    C: PixelColor,
-{
-    fn translate(&self, by: Point) -> Self {
-        Self {
-            frame: self.frame.translate(by),
-            ..*self
-        }
-    }
-
-    fn translate_mut(&mut self, by: Point) -> &mut Self {
-        Transform::translate_mut(&mut self.frame, by);
-        self
-    }
-}
-
-impl<C> Dimensions for BallInFrame<C>
-where
-    C: PixelColor,
-{
-    fn bounding_box(&self) -> Rectangle {
-        self.frame.bounding_box()
-    }
-}
-
-impl<C> Drawable for BallInFrame<C>
-where
-    C: PixelColor,
-{
-    type Color = C;
-    type Output = ();
-
-    fn draw<D>(&self, target: &mut D) -> Result<Self::Output, D::Error>
-    where
-        D: DrawTarget<Color = Self::Color>,
-    {
-        let ball = self
-            .ball
-            .align_to(&self.frame, horizontal::Center, vertical::Center)
-            .translate(self.offset_from_center);
-
-        self.frame.draw(target)?;
-        ball.draw(target)?;
-
-        Ok(())
     }
 }
