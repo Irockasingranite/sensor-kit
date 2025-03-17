@@ -3,20 +3,19 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, text::Text};
 use embedded_layout::prelude::*;
 
-use super::inputs::PctInput;
 use crate::{
     app::{AppMode, Draw, Update},
-    peripherals::PeripheralError,
+    peripherals::{AnalogInput, PeripheralError},
 };
 
 pub struct LedMode<'a> {
     led: Box<dyn LedOutput + 'a>,
-    input: Box<dyn PctInput + Send + 'a>,
+    input: Box<dyn AnalogInput + Send + 'a>,
     brightness_pct: Option<f32>,
 }
 
 impl<'a> LedMode<'a> {
-    pub fn new(led: impl LedOutput + 'a, input: impl PctInput + 'a) -> Self {
+    pub fn new(led: impl LedOutput + 'a, input: impl AnalogInput + 'a) -> Self {
         Self {
             led: Box::new(led),
             input: Box::new(input),

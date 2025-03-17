@@ -3,21 +3,21 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 use embedded_layout::prelude::*;
 
-use super::inputs::PctInput;
 use crate::app::{AppMode, Draw, Update};
+use crate::peripherals::AnalogInput;
 use crate::ui::HorizontalBar;
 
 // Struct defining the 'Sound Sensor' mode. Sample data from the sound sensor and displays it as a
 // bar.
 pub struct SoundMode<'a> {
     /// Input used.
-    input: Box<dyn PctInput + 'a>,
+    input: Box<dyn AnalogInput + 'a>,
     /// Value in %.
     value_pct: Option<f32>,
 }
 
 impl<'a> SoundMode<'a> {
-    pub fn new(input: impl PctInput + 'a) -> Self {
+    pub fn new(input: impl AnalogInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,

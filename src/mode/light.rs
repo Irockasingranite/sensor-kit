@@ -3,19 +3,19 @@ use async_trait::async_trait;
 use embedded_graphics::{prelude::*, primitives::Circle};
 use embedded_layout::prelude::*;
 
-use super::inputs::PctInput;
 use crate::app::{AppMode, Draw, Update};
+use crate::peripherals::AnalogInput;
 use crate::ui::FilledCircle;
 
 /// Struct defining the 'Light Sensor' mode. Samples data from a photo-resistor and displays value
 /// as a partially filled circle.
 pub struct LightSensorMode<'a> {
-    input: Box<dyn PctInput + 'a>,
+    input: Box<dyn AnalogInput + 'a>,
     value_pct: Option<f32>,
 }
 
 impl<'a> LightSensorMode<'a> {
-    pub fn new(input: impl PctInput + 'a) -> Self {
+    pub fn new(input: impl AnalogInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,

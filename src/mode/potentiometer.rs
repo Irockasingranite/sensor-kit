@@ -8,8 +8,8 @@ use embedded_layout::align::Align;
 use embedded_layout::layout::linear::{FixedMargin, LinearLayout};
 use embedded_layout::prelude::*;
 
-use super::inputs::PctInput;
 use crate::app::{AppMode, AppStyle};
+use crate::peripherals::AnalogInput;
 use crate::{
     app::{Draw, Update},
     ui::HorizontalBar,
@@ -19,13 +19,13 @@ use crate::{
 /// both a percentage and a bar.
 pub struct PotentiometerMode<'a> {
     /// The potentiometer used as input.
-    input: Box<dyn PctInput + 'a>,
+    input: Box<dyn AnalogInput + 'a>,
     /// Signal value in %.
     value_pct: Option<f32>,
 }
 
 impl<'a> PotentiometerMode<'a> {
-    pub fn new(input: impl PctInput + 'a) -> Self {
+    pub fn new(input: impl AnalogInput + 'a) -> Self {
         Self {
             input: Box::new(input),
             value_pct: None,

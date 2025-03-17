@@ -6,15 +6,14 @@ use embedded_layout::prelude::*;
 use fugit::HertzU32;
 use micromath::F32Ext;
 
-use super::inputs::PctInput;
 use crate::app::AppMode;
 use crate::{
     app::{Draw, Update},
-    peripherals::PeripheralError,
+    peripherals::{AnalogInput, PeripheralError},
 };
 
 pub struct BuzzerMode<'a> {
-    input: Box<dyn PctInput + 'a>,
+    input: Box<dyn AnalogInput + 'a>,
     output: Box<dyn BuzzerOutput + 'a>,
     frequency: Option<HertzU32>,
 }
@@ -23,7 +22,7 @@ impl<'a> BuzzerMode<'a> {
     const FREQ_MIN: HertzU32 = HertzU32::Hz(10);
     const FREQ_MAX: HertzU32 = HertzU32::Hz(500);
 
-    pub fn new(input: impl PctInput + 'a, output: impl BuzzerOutput + 'a) -> Self {
+    pub fn new(input: impl AnalogInput + 'a, output: impl BuzzerOutput + 'a) -> Self {
         Self {
             input: Box::new(input),
             output: Box::new(output),

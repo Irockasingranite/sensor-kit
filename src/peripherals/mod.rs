@@ -1,15 +1,15 @@
 /// Accelerometer
 mod accelerometer;
 /// Analog Input.
-mod analog_input;
+mod adc;
 /// Environment sensors.
 mod environment;
 /// PWM.
 mod pwm;
 
-pub use analog_input::{AnalogInput, ReversedAnalogInput};
+pub use adc::{AnalogInput, ReversedAnalogInput};
 pub use environment::SensorKitEnvSensors;
-pub use pwm::SharedPwm;
+pub use pwm::Pwm;
 
 use thiserror::Error;
 
