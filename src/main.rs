@@ -9,6 +9,14 @@ mod peripherals;
 mod platform;
 mod ui;
 
+#[cfg(feature = "nucleo-f413zh")]
+use platform::nucleo_f413zh as hw_platform;
+
+#[cfg(feature = "rp-pico")]
+use platform::rp_pico as hw_platform;
+
+use hw_platform::{platform, I2c, PinError};
+
 use app::{AppMode, AppStyle};
 use embassy_embedded_hal::shared_bus::blocking::i2c::I2cDevice;
 use mode::buzzer::BuzzerMode;
@@ -16,7 +24,6 @@ use mode::{
     AccelerationMode, EnvironmentMode, LedMode, LightSensorMode, PotentiometerMode, SoundMode,
 };
 use peripherals::{ReversedAnalogInput, SensorKitEnvSensors};
-use platform::nucleo_f413zh::{platform, I2c, PinError};
 use platform::DynSafeWait;
 use ui::TitleFrame;
 
@@ -46,11 +53,12 @@ static HEAP: Heap = Heap::empty();
 
 static BUTTON_SIGNAL: Signal<CriticalSectionRawMutex, bool> = Signal::new();
 
-static I2C1_BUS: StaticCell<BlockingMutex<CriticalSectionRawMutex, RefCell<I2c>>> =
+static I2C_BUS: StaticCell<BlockingMutex<CriticalSectionRawMutex, RefCell<I2c>>> =
     StaticCell::new();
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    defmt::info!("Hello world");
     const HEAP_SIZE: usize = 4096;
     static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
     #[allow(static_mut_refs)]
@@ -58,12 +66,13 @@ async fn main(spawner: Spawner) {
         HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE)
     }
 
+
     let platform = platform();
 
     let (i2c, a0, a2, a3, d4, d5, d6) = platform.split();
 
     let i2c = BlockingMutex::new(RefCell::new(i2c));
-    let i2c = I2C1_BUS.init(i2c);
+    let i2c = I2C_BUS.init(i2c);
 
     // Set up peripherals
 

@@ -33,7 +33,7 @@ where
     }
 
     async fn enable(&mut self) -> Result<(), PeripheralError> {
-        self.set_frequency(HertzU32::Hz(100)).await?;
+        self.set_frequency(HertzU32::Hz(10000)).await?;
         self.enable().await?;
         Ok(())
     }

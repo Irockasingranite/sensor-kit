@@ -8,8 +8,21 @@
 //! updating `memory.x` ensures a rebuild of the application with the
 //! new memory settings.
 
+use std::{env, path::PathBuf};
+
 fn main() {
     println!("cargo:rustc-link-arg-bins=--nmagic");
     println!("cargo:rustc-link-arg-bins=-Tlink.x");
     println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
+
+    if cfg!(feature = "rp-pico") {
+        println!("cargo:rerun-if-changed=rp_memory.x");
+
+        //println!("cargo:rustc-link-arg-bins=-Tlink-rp.x");
+
+        let out_dir = &PathBuf::from(env::var("OUT_DIR").unwrap());
+        println!("out dir: {out_dir:?}");
+        std::fs::copy("./rp_memory.x", out_dir.join("memory.x")).unwrap();
+        println!("cargo:rustc-link-search={}", out_dir.display());
+    }
 }

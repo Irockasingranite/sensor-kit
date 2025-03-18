@@ -36,20 +36,20 @@ where
         self.dht20
             .read()
             .map(|r| r.temperature)
-            .map_err(|_| PeripheralError::I2cError)
+            .map_err(|_| PeripheralError::I2c)
     }
 
     fn get_humidity(&mut self) -> Result<f32, PeripheralError> {
         self.dht20
             .read()
             .map(|r| r.humidity)
-            .map_err(|_| PeripheralError::I2cError)
+            .map_err(|_| PeripheralError::I2c)
     }
 
     fn get_pressure(&mut self) -> Result<f32, PeripheralError> {
         self.bmp280
             .measure(&mut Delay)
             .map(|r| r.pressure / 1000.0)
-            .map_err(|_| PeripheralError::I2cError)
+            .map_err(|_| PeripheralError::I2c)
     }
 }

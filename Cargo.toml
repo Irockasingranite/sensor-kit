@@ -26,8 +26,7 @@ cortex-m-rt = "0.7.3"
 embassy-executor = { version = "0.7", features = ["task-arena-size-4096", "arch-cortex-m", "executor-thread", "defmt", "executor-interrupt"] }
 embassy-sync = { version = "0.6" }
 embassy-time = { version = "0.4", features = ["defmt", "defmt-timestamp-uptime"] }
-cortex-m = { version = "0.7.6", features = ["critical-section-single-core"] }
-embassy-stm32 = { version = "0.2", features = ["defmt", "stm32f413zh", "unstable-pac", "memory-x", "time-driver-any", "exti" ]  }
+cortex-m = { version = "0.7.6"  }
 embedded-dht-rs = { version = "0.4.0", features = ["dht20"] }
 ssd1315 = "0.2.2"
 embedded-graphics = "0.8.1"
@@ -44,6 +43,16 @@ embassy-embedded-hal = { version = "0.3.0", features = ["defmt"] }
 static_cell = "2.1.0"
 accelerometer = "0.12.0"
 lis3dh = { git = "https://github.com/Irockasingranite/lis3dh-rs", branch = "embedded-hal-1" }
+portable-atomic = { version = "1.5", features = ["critical-section", "require-cas"], optional = true }
+embassy-rp = { version = "0.4.0", features = ["critical-section-impl", "defmt", "intrinsics",
+"rp235xa", "time-driver", "unstable-pac"], optional = true }
+embassy-stm32 = { version = "0.2", features = ["defmt", "stm32f413zh", "unstable-pac", "memory-x",
+    "time-driver-any", "exti" ], optional = true }
+
+[features]
+default = ["nucleo-f413zh"]
+nucleo-f413zh = ["dep:embassy-stm32", "cortex-m/critical-section-single-core"]
+rp-pico = ["dep:embassy-rp", "dep:portable-atomic"]
 
 [profile.release]
 debug = 2

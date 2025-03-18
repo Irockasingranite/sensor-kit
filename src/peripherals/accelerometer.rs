@@ -15,6 +15,6 @@ where
     E: Send + Debug,
 {
     async fn accel_norm(&mut self) -> Result<F32x3, PeripheralError> {
-        Accelerometer::accel_norm(self).map_err(|_| PeripheralError::I2cError)
+        Accelerometer::accel_norm(self).map_err(|_| PeripheralError::I2c)
     }
 }

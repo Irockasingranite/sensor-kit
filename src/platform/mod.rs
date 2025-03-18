@@ -1,4 +1,7 @@
+#[cfg(feature = "nucleo-f413zh")]
 pub mod nucleo_f413zh;
+#[cfg(feature = "rp-pico")]
+pub mod rp_pico;
 
 use crate::peripherals::AnalogInput;
 use crate::peripherals::Pwm;
