@@ -7,11 +7,15 @@ use embassy_sync::blocking_mutex::raw::RawMutex;
 use embassy_sync::mutex::Mutex;
 
 #[async_trait]
+/// An analog input.
 pub trait AnalogInput: Send {
+    /// Raw input value.
     async fn input_raw(&mut self) -> Result<u16, PeripheralError>;
 
+    /// Maximum value this input can provide.
     async fn max_value(&self) -> Result<u16, PeripheralError>;
 
+    /// Relative input value as compared to its maximum value.
     async fn input_pct(&mut self) -> Result<f32, PeripheralError> {
         let raw = self.input_raw().await?;
         let max = self.max_value().await?;
@@ -42,11 +46,14 @@ where
     }
 }
 
+/// An analog input whose relative value is reversed (i.e. the maximum value registers as 0%, and 0
+/// registers as 100%).
 pub struct ReversedAnalogInput<T> {
     input: T,
 }
 
 impl<T> ReversedAnalogInput<T> {
+    /// Create a new reversed input based on an existing input.
     pub fn new(input: T) -> Self {
         Self { input }
     }

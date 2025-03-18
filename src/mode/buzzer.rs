@@ -12,9 +12,14 @@ use crate::{
     peripherals::{AnalogInput, PeripheralError},
 };
 
+/// Struct defining the 'Buzzer Mode'. Samples from an analog input and adjusts buzzer frequency
+/// according to a logarithmic scale.
 pub struct BuzzerMode<'a> {
+    /// Input determining the frequency.
     input: Box<dyn AnalogInput + 'a>,
+    /// Buzzer output.
     output: Box<dyn BuzzerOutput + 'a>,
+    /// Currently set frequency, if any.
     frequency: Option<HertzU32>,
 }
 
@@ -40,11 +45,15 @@ fn interp_log(pct: f32, min: f32, max: f32) -> f32 {
 }
 
 #[async_trait]
+/// A buzzer output with variable frequency.
 pub trait BuzzerOutput: Send {
+    /// Enable buzzer output.
     async fn enable(&mut self) -> Result<(), PeripheralError>;
 
+    /// Disable buzzer output.
     async fn disable(&mut self) -> Result<(), PeripheralError>;
 
+    /// Set buzzer frequency.
     async fn set_frequency(&mut self, freq: HertzU32) -> Result<(), PeripheralError>;
 }
 

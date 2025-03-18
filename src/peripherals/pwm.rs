@@ -7,13 +7,18 @@ use crate::mode::{buzzer::BuzzerOutput, led::LedOutput};
 use super::PeripheralError;
 
 #[async_trait]
+/// A PWM with additional capabilities compared to embedded_hal's `SetDutyCycle`.
 pub trait Pwm {
+    /// Set duty cycle in percent.
     async fn set_duty_cycle_percent(&mut self, percent: u8) -> Result<(), PeripheralError>;
 
+    /// Set PWM frequency.
     async fn set_frequency(&mut self, freq: HertzU32) -> Result<(), PeripheralError>;
 
+    /// Enable PWM output.
     async fn enable(&mut self) -> Result<(), PeripheralError>;
 
+    /// Disable PWM output.
     async fn disable(&mut self) -> Result<(), PeripheralError>;
 }
 

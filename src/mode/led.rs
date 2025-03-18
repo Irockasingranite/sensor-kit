@@ -8,9 +8,14 @@ use crate::{
     peripherals::{AnalogInput, PeripheralError},
 };
 
+/// Struct defining the 'LED Mode'. Sampled from an analog input and sets LED brightness
+/// accordingly.
 pub struct LedMode<'a> {
+    /// LED output.
     led: Box<dyn LedOutput + 'a>,
+    /// Input determining the brightness.
     input: Box<dyn AnalogInput + Send + 'a>,
+    /// Current brightness, if any.
     brightness_pct: Option<f32>,
 }
 
@@ -25,15 +30,19 @@ impl<'a> LedMode<'a> {
 }
 
 #[async_trait]
+/// An LED output with variable brightness.
 pub trait LedOutput: Send {
+    /// Set brightness in percent.
     async fn set_brightness(&mut self, brightness_pct: f32) -> Result<(), PeripheralError>;
 
+    /// Enable LED output.
     async fn enable(&mut self) -> Result<(), PeripheralError> {
         Ok(())
     }
 
+    /// Disable LED output.
     async fn disable(&mut self) -> Result<(), PeripheralError> {
-        Ok(())
+        self.set_brightness(0.0).await
     }
 }
 
