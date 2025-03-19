@@ -1,3 +1,21 @@
+//! # Arduino Sensor Kit Firmware
+//!
+//! This application demonstrates the use of a variety of peripherals found on the Arduino Sensor
+//! Kit. The button connected to pin D4 cycles through a variety of modes, some of which can be
+//! controlled by the potentiometer dial connected to pin A0.
+//!
+//! The application is structured into 3 distinct layers: The application layer describing the
+//! various modes in [`mode`], the peripheral layer in [`peripherals`] defining the abstract
+//! peripheral interfaces used by the application layer, and the platform layer containing platform
+//! specific implementations of those interfaces. Finally, a main loop runs and switches between
+//! the different modes.
+//!
+//! A mode is anything that implements [`AppMode`], which apart from some bookkeeping requires
+//! implementing both [`app::Update`] and [`app::Draw`]. The [`app::Update`] implementation defines
+//! how a mode updates its internal state (e.g. based on sensor data), and [`app::Draw`] determines
+//! what should be shown on the display during this mode, depending on the mode's internal state.
+//! Defining a new mode is as simple as freely defining these two operations.
+
 #![no_std]
 #![no_main]
 

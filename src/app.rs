@@ -9,6 +9,8 @@ use crate::peripherals::PeripheralError;
 /// Marks an object that can update its internal state.
 #[async_trait]
 pub trait Update {
+    /// Update internal state. Using the `#[async_trait]` macro, this function's signature is simply
+    /// `async fn update(&mut self)`.
     async fn update(&mut self);
 }
 
