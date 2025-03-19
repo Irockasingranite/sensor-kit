@@ -4,8 +4,30 @@ This application demonstrates the use of a variety of peripherals found on the A
 The button connected to pin D4 cycles through a variety of modes, some of which can be controlled by
 the potentiometer dial connected to pin A0.
 
-The firmware is compatible with STM32 Nucleo-F413ZH and Raspberry Bi Pico2 Boards. The default
+The firmware is compatible with STM32 Nucleo-F413ZH and Raspberry Pi Pico2 Boards. The default
 target is the Nucleo-F413ZH, see instructions below for building and flashing for Pico2 boards.
+
+## Wiring for Pico2
+
+The RP Pico2 does not come with an Arduino header, so to use it with the sensor kit, some additional
+wiring is necessary.
+
+Connect pins according to this table:
+| Pico2  | Sensor Kit |
+| ------ | ---------- |
+| GND    | GND        |
+| VBUS   | 3V3        |
+| GP0    | SDA        |
+| GP1    | SCL        |
+| GP2    | D4         |
+| GP3    | D5         |
+| GP4    | D6         |
+| GP26   | A0         |
+| GP27   | A2         |
+| GP28   | A3         |
+
+
+## Building and Flashing
 
 To build this project, make sure `probe-rs` is installed:
 ```
@@ -17,23 +39,27 @@ If `cargo-binstall` is missing, install that first:
 cargo install cargo-binstall
 ```
 
-Then, build the project using cargo:
+### Nucleo-F413ZH
+
+The Nucleo-F413ZH is configured as the default target. As such, you can simply run
 ```
 cargo build --release
 ```
 
-Flash it via
+to build the firmware, and
+
 ```
 cargo flash --release --chip=STM32F413ZHTx
 ```
 
-Or run it directly via
+to flash it.
+
+To run the firmware with `probe-rs` attached for capturing log output, run
 ```
 cargo run --release
 ```
-to capture log output.
 
-## Building for Pico2
+### Pico2
 
 To build for Pico2 targets, you'll have invoke a few extra options:
 ```
@@ -54,3 +80,9 @@ probe-rs download --chip RP235x target/thumbv8m.main-none-eabihf/release/sensor-
 
 Not that this command does not invoke `cargo build` first, so make sure to rebuild after making
 changes.
+
+Similarly,
+```
+probe-rs attach --chip RP235x target/thumbv8m.main-none-eabihf/release/sensor-kit
+```
+can be used to capture log output from a running board.
