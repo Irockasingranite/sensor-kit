@@ -1,0 +1,50 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [ "main" ]
+    
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Configure cache
+        uses: Swatinem/rust-cache@v2
+      - name: Setup pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Clean docs folder
+        run: cargo clean --doc
+      - name: Build docs
+        run: cargo doc --no-deps
+      - name: Add redirect
+        run: echo '<meta http-equiv="refresh" content="0;url=sensor_kit/index.html">' > target/thumbv7em-none-eabihf/doc/index.html
+      - name: Remove lock file
+        run: rm target/thumbv7em-none-eabihf/doc/.lock
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/thumbv7em-none-eabihf/doc
+  
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+        
